@@ -87,6 +87,160 @@ def smooth_series(values: List[float], window: int = 3) -> List[float]:
     return smoothed
 
 
+def _beta_params_from_mean_rel_sd(mean: float, rel_sd: float) -> Optional[Tuple[float, float]]:
+    """Return (alpha, beta) for a beta distribution given mean and relative SD."""
+    if not (0.0 < mean < 1.0) or rel_sd <= 0.0:
+        return None
+    variance = (rel_sd * mean) ** 2
+    max_variance = mean * (1.0 - mean)
+    if variance >= max_variance:
+        variance = max_variance * 0.999
+    if variance <= 0.0:
+        return None
+    common = (mean * (1.0 - mean) / variance) - 1.0
+    if common <= 0.0:
+        return None
+    alpha = mean * common
+    beta_param = (1.0 - mean) * common
+    if alpha <= 0.0 or beta_param <= 0.0:
+        return None
+    return alpha, beta_param
+
+
+def _sample_probability_value(value: Any,
+                              rel_sd: float,
+                              rng: np.random.Generator) -> Any:
+    """Sample a beta-distributed value around the provided probability."""
+    try:
+        base = float(value)
+    except (TypeError, ValueError):
+        return value
+    if not math.isfinite(base) or base <= 0.0:
+        return value
+    epsilon = 1e-6
+    clipped = min(max(base, epsilon), 1.0 - epsilon)
+    params = _beta_params_from_mean_rel_sd(clipped, rel_sd)
+    if params is None:
+        return value
+    alpha, beta_param = params
+    return float(rng.beta(alpha, beta_param))
+
+
+def _gamma_params_from_mean_rel_sd(mean: float, rel_sd: float) -> Optional[Tuple[float, float]]:
+    """Return (shape, scale) for a gamma distribution given mean and relative SD."""
+    if mean <= 0.0 or rel_sd <= 0.0:
+        return None
+    variance = (rel_sd * mean) ** 2
+    if variance <= 0.0:
+        return None
+    shape = (mean ** 2) / variance
+    scale = variance / mean
+    if shape <= 0.0 or scale <= 0.0:
+        return None
+    return shape, scale
+
+
+def _sample_gamma_value(value: Any,
+                        rel_sd: float,
+                        rng: np.random.Generator) -> Any:
+    """Sample a gamma-distributed value around the provided positive mean."""
+    try:
+        base = float(value)
+    except (TypeError, ValueError):
+        return value
+    if not math.isfinite(base) or base <= 0.0:
+        return value
+    params = _gamma_params_from_mean_rel_sd(base, rel_sd)
+    if params is None:
+        return value
+    shape, scale = params
+    return float(rng.gamma(shape, scale))
+
+
+def _lognormal_params_from_ci(point_estimate: float,
+                              lower: float,
+                              upper: float) -> Optional[Tuple[float, float]]:
+    """Return (mu, sigma) for lognormal given point estimate and symmetric 95% CI."""
+    if point_estimate <= 0.0 or lower <= 0.0 or upper <= 0.0:
+        return None
+    sigma = (math.log(upper) - math.log(lower)) / (2.0 * 1.96)
+    if sigma <= 0.0:
+        return None
+    mu = math.log(point_estimate)
+    return mu, sigma
+
+
+def _sample_lognormal_from_ci(point_estimate: float,
+                              lower: float,
+                              upper: float,
+                              rng: np.random.Generator) -> float:
+    """Sample a lognormal value using the supplied CI; fall back to point estimate."""
+    params = _lognormal_params_from_ci(point_estimate, lower, upper)
+    if params is None:
+        return point_estimate
+    mu, sigma = params
+    return float(rng.lognormal(mean=mu, sigma=sigma))
+
+
+def _apply_beta_to_mapping(mapping: Dict[Any, Any],
+                           rel_sd: float,
+                           rng: np.random.Generator) -> None:
+    """Recursively sample beta-distributed values for all numeric leaves."""
+    for key, val in mapping.items():
+        if isinstance(val, dict):
+            _apply_beta_to_mapping(val, rel_sd, rng)
+        else:
+            mapping[key] = _sample_probability_value(val, rel_sd, rng)
+
+
+def _sample_cost_structure(costs_cfg: Dict[str, Any],
+                           rel_sd: float,
+                           rng: np.random.Generator) -> None:
+    """Apply gamma sampling to nested cost dictionaries."""
+    for stage_meta in costs_cfg.values():
+        if not isinstance(stage_meta, dict):
+            continue
+        for setting_meta in stage_meta.values():
+            if not isinstance(setting_meta, dict):
+                continue
+            for payer, amount in setting_meta.items():
+                setting_meta[payer] = _sample_gamma_value(amount, rel_sd, rng)
+
+
+def _sample_risk_factor_prevalence(risk_defs: Dict[str, dict],
+                                   rel_sd: float,
+                                   rng: np.random.Generator) -> None:
+    """Apply beta sampling to each risk-factor prevalence entry."""
+    for meta in risk_defs.values():
+        prevalence = meta.get('prevalence')
+        if not isinstance(prevalence, dict):
+            continue
+        for sex_key, value in prevalence.items():
+            prevalence[sex_key] = _sample_probability_value(value, rel_sd, rng)
+
+
+def _sample_risk_factor_relative_risks(risk_defs: Dict[str, dict],
+                                       rng: np.random.Generator) -> None:
+    """Apply lognormal sampling to risk-factor hazard ratios when CI data is available."""
+    for risk_name, meta in risk_defs.items():
+        ci_lookup = RISK_FACTOR_HR_INTERVALS.get(risk_name, {})
+        rr_def = meta.get('relative_risks')
+        if not isinstance(rr_def, dict) or not ci_lookup:
+            continue
+        for transition, sex_map in rr_def.items():
+            if not isinstance(sex_map, dict):
+                continue
+            ci_transition = ci_lookup.get(transition, {})
+            if not ci_transition:
+                continue
+            for sex_key, value in sex_map.items():
+                ci_tuple = ci_transition.get(sex_key) or ci_transition.get('all')
+                if not ci_tuple:
+                    continue
+                point, lower, upper = ci_tuple
+                sex_map[sex_key] = _sample_lognormal_from_ci(point, lower, upper, rng)
+
+
 general_config = {
     'number_of_timesteps': 18,
     'population': 33167098,
@@ -145,6 +299,15 @@ general_config = {
     'store_individual_survival': False,    # disable huge per-person survival records by default
     'report_paf_to_terminal': False,      # suppress console logging of PAF summary
     'compute_paf_in_main': False,         # skip running the heavy PAF counterfactual unless needed
+
+    # Probabilistic sensitivity analysis configuration (sampling specs defined below)
+    'psa': {
+        'use': False,
+        'iterations': 1000,
+        'seed': 20231113,
+        'relative_sd_beta': 0.10,   # +/-10% relative SD for beta-distributed parameters
+        'relative_sd_gamma': 0.10,  # +/-10% relative SD for gamma-distributed parameters
+    },
 
     # Optional: override baseline (time step 0) summary metrics with known real-world data
     'initial_summary_overrides': {
@@ -622,6 +785,61 @@ general_config = {
         'severe': {
             'home': {'nhs': 7668.60, 'informal': 31523.39},
             'institution': {'nhs': 53084.13, 'informal': 501.88},
+        },
+    },
+}
+
+PSA_DEFAULT_RELATIVE_SD = 0.10
+
+RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, float]]]] = {
+    'periodontal_disease': {
+        'onset': {
+            'female': (1.47, 1.32, 1.65),
+            'male': (1.47, 1.32, 1.65),
+        },
+        'severe_to_death': {
+            'female': (1.36, 1.10, 1.69),
+            'male': (1.36, 1.10, 1.69),
+        },
+    },
+    'smoking': {
+        'onset': {
+            'female': (1.49, 1.29, 1.72),
+            'male': (1.34, 1.19, 1.51),
+        },
+        'severe_to_death': {
+            'female': (1.75, 1.33, 2.29),
+            'male': (1.75, 1.33, 2.29),
+        },
+    },
+    'cerebrovascular_disease': {
+        'onset': {
+            'female': (2.40, 1.91, 3.02),
+            'male': (2.24, 1.86, 2.71),
+        },
+        'severe_to_death': {
+            'female': (1.18, 1.12, 1.25),
+            'male': (1.18, 1.12, 1.25),
+        },
+    },
+    'CVD_disease': {
+        'onset': {
+            'female': (2.10, 1.73, 2.54),
+            'male': (2.14, 1.85, 2.47),
+        },
+        'severe_to_death': {
+            'female': (1.34, 1.05, 1.71),
+            'male': (1.34, 1.05, 1.71),
+        },
+    },
+    'diabetes': {
+        'onset': {
+            'female': (1.36, 1.02, 1.83),
+            'male': (1.48, 1.02, 2.15),
+        },
+        'severe_to_death': {
+            'female': (1.79, 1.56, 2.06),
+            'male': (1.79, 1.56, 2.06),
         },
     },
 }
@@ -2454,6 +2672,139 @@ def compute_population_attributable_fraction(config: dict,
         'baseline_without_risk_onsets': baseline_breakdown.get('without', 0),
     }
 
+
+# -------- Probabilistic sensitivity analysis (PSA) utilities --------
+
+def apply_psa_draw(base_config: dict,
+                   psa_cfg: Optional[dict] = None,
+                   rng: Optional[np.random.Generator] = None) -> dict:
+    """
+    Return a deep-copied config with PSA sampling applied to costs, utilities,
+    probabilities, and risk-factor parameters.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+    psa_meta = psa_cfg or base_config.get('psa') or {}
+    rel_beta = float(psa_meta.get('relative_sd_beta', PSA_DEFAULT_RELATIVE_SD))
+    rel_gamma = float(psa_meta.get('relative_sd_gamma', PSA_DEFAULT_RELATIVE_SD))
+
+    cfg = copy.deepcopy(base_config)
+
+    base_prob = cfg.get('base_onset_probability')
+    if base_prob is not None:
+        cfg['base_onset_probability'] = _sample_probability_value(base_prob, rel_beta, rng)
+
+    costs_cfg = cfg.get('costs')
+    if isinstance(costs_cfg, dict):
+        _sample_cost_structure(costs_cfg, rel_gamma, rng)
+
+    for key in ('utility_norms_by_age', 'utility_multipliers', 'stage_age_qalys', 'dementia_stage_qalys'):
+        mapping = cfg.get(key)
+        if isinstance(mapping, dict):
+            _apply_beta_to_mapping(mapping, rel_beta, rng)
+
+    risk_defs = cfg.get('risk_factors')
+    if isinstance(risk_defs, dict):
+        _sample_risk_factor_prevalence(risk_defs, rel_beta, rng)
+        _sample_risk_factor_relative_risks(risk_defs, rng)
+
+    return cfg
+
+
+def extract_psa_metrics(model_results: dict) -> dict:
+    """
+    Pull decision metrics (costs, QALYs, incidence, severity) from a single model run.
+    """
+    summaries = model_results.get('summaries', {}) if isinstance(model_results, dict) else {}
+    if not summaries:
+        return {}
+    final_step = max(summaries)
+    final_summary = summaries[final_step]
+
+    total_incidence = 0
+    for summary in summaries.values():
+        total_incidence += int(summary.get('incident_onsets', 0) or 0)
+
+    metrics = {
+        'total_costs_nhs': float(final_summary.get('total_costs_nhs', 0.0) or 0.0),
+        'total_costs_informal': float(final_summary.get('total_costs_informal', 0.0) or 0.0),
+        'total_qalys_patient': float(final_summary.get('total_qalys_patient', 0.0) or 0.0),
+        'total_qalys_caregiver': float(final_summary.get('total_qalys_caregiver', 0.0) or 0.0),
+        'incident_onsets_total': float(total_incidence),
+    }
+    metrics['total_costs_all'] = metrics['total_costs_nhs'] + metrics['total_costs_informal']
+    metrics['total_qalys_combined'] = metrics['total_qalys_patient'] + metrics['total_qalys_caregiver']
+
+    for stage in ('mild', 'moderate', 'severe'):
+        key = f'stage_{stage}'
+        metrics[key] = float(final_summary.get(key, 0) or 0)
+
+    return metrics
+
+
+def summarize_psa_results(metrics_df: pd.DataFrame) -> Dict[str, dict]:
+    """
+    Compute mean and 95% intervals for each numeric PSA metric.
+    """
+    if metrics_df is None or metrics_df.empty:
+        return {}
+    summary: Dict[str, dict] = {}
+    for column in metrics_df.columns:
+        if column == 'iteration':
+            continue
+        if not pd.api.types.is_numeric_dtype(metrics_df[column]):
+            continue
+        series = metrics_df[column].dropna()
+        if series.empty:
+            continue
+        summary[column] = {
+            'mean': float(series.mean()),
+            'lower_95': float(series.quantile(0.025)),
+            'upper_95': float(series.quantile(0.975)),
+        }
+    return summary
+
+
+def run_probabilistic_sensitivity_analysis(base_config: dict,
+                                           psa_cfg: Optional[dict] = None,
+                                           *,
+                                           collect_draw_level: bool = False,
+                                           seed: Optional[int] = None) -> dict:
+    """
+    Execute a Monte Carlo PSA using the provided configuration.
+    Returns summary 95% intervals plus optional draw-level metrics.
+    """
+    psa_meta = copy.deepcopy(psa_cfg or base_config.get('psa') or {})
+    if not psa_meta.get('use', False):
+        raise ValueError("PSA is disabled; set config['psa']['use'] = True to run the analysis.")
+
+    iterations = int(psa_meta.get('iterations', 1000))
+    if iterations <= 0:
+        raise ValueError("PSA iterations must be a positive integer.")
+
+    base_seed = seed if seed is not None else psa_meta.get('seed')
+    rng = np.random.default_rng(base_seed)
+
+    draw_metrics: List[dict] = []
+    for draw_idx in range(iterations):
+        draw_config = apply_psa_draw(base_config, psa_meta, rng)
+        draw_seed = int(rng.integers(0, 2**32 - 1))
+        draw_results = run_model(draw_config, seed=draw_seed)
+        metrics = extract_psa_metrics(draw_results)
+        metrics['iteration'] = draw_idx + 1
+        draw_metrics.append(metrics)
+
+    metrics_df = pd.DataFrame(draw_metrics)
+    summary = summarize_psa_results(metrics_df)
+
+    payload = {
+        'summary': summary,
+        'iterations': iterations,
+    }
+    if collect_draw_level:
+        payload['draws'] = metrics_df
+    return payload
+
 # Visuals
 
 def save_or_show(save_path, show=False, label="plot"):
@@ -3426,9 +3777,37 @@ if __name__ == "__main__":
         elif general_config.get('report_paf_to_terminal', False):
             print("Unable to compute periodontal disease PAF (no dementia onsets in baseline scenario).")
 
-# After: model_results = run_model(general_config, seed=run_seed)
+    psa_cfg = general_config.get('psa', {})
+    if psa_cfg.get('use', False):
+        psa_results = run_probabilistic_sensitivity_analysis(
+            general_config,
+            psa_cfg,
+            collect_draw_level=False,
+            seed=run_seed,
+        )
+        summary = psa_results.get('summary', {})
+        if summary:
+            print("\nProbabilistic sensitivity analysis (95% CI):")
+            focus_metrics = [
+                'total_costs_all',
+                'total_qalys_combined',
+                'incident_onsets_total',
+                'stage_mild',
+                'stage_moderate',
+                'stage_severe',
+            ]
+            for metric in focus_metrics:
+                stats = summary.get(metric)
+                if not stats:
+                    continue
+                mean_val = stats.get('mean')
+                lo = stats.get('lower_95')
+                hi = stats.get('upper_95')
+                print(f"  {metric}: mean={mean_val:.2f}, 95% CI [{lo:.2f}, {hi:.2f}]")
 
-# Run both diagnostics (set show_plots=True if you want them onscreen as well as saved)
+    # After: model_results = run_model(general_config, seed=run_seed)
+
+    # Run both diagnostics (set show_plots=True if you want them onscreen as well as saved)
     run_constant_hazard_diagnostics(
     model_results,
     general_config,
@@ -3526,4 +3905,3 @@ def run_and_save(sub, sex_label, save_dir):
 # -------- 5. Run for both sexes --------
 res_f = run_and_save(df[df["sex"]=="F"], "Female", save_dir)
 res_m = run_and_save(df[df["sex"]=="M"], "Male", save_dir)
-
