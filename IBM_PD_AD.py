@@ -3,13 +3,27 @@
 import random
 import math
 import copy
+import pickle
+import gzip
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from collections import Counter, defaultdict
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
+# Optional: tqdm for progress bars (will gracefully degrade if not installed)
+try:
+    from tqdm import tqdm
+    TQDM_AVAILABLE = True
+except ImportError:
+    TQDM_AVAILABLE = False
+    def tqdm(iterable, **kwargs):
+        """Fallback if tqdm not installed"""
+        return iterable
 
 # General configuration
 
@@ -305,6 +319,7 @@ general_config = {
         'use': True,
         'iterations': 1000,
         'seed': 20231113,
+        'n_jobs': None,             # Number of parallel jobs (None = use all CPU cores)
         'relative_sd_beta': 0.10,   # +/-10% relative SD for beta-distributed parameters
         'relative_sd_gamma': 0.10,  # +/-10% relative SD for gamma-distributed parameters
     },
@@ -2765,14 +2780,48 @@ def summarize_psa_results(metrics_df: pd.DataFrame) -> Dict[str, dict]:
     return summary
 
 
+def _run_single_psa_iteration(args: Tuple[int, dict, dict, int]) -> dict:
+    """
+    Helper function to run a single PSA iteration in parallel.
+
+    Args:
+        args: Tuple of (draw_idx, base_config, psa_meta, draw_seed)
+
+    Returns:
+        Dictionary of metrics for this iteration
+    """
+    draw_idx, base_config, psa_meta, draw_seed = args
+    # Create a new RNG for this draw to ensure reproducibility
+    rng = np.random.default_rng(draw_seed)
+    draw_config = apply_psa_draw(base_config, psa_meta, rng)
+    # Generate a seed for the model run
+    model_seed = int(rng.integers(0, 2**32 - 1))
+    draw_results = run_model(draw_config, seed=model_seed)
+    metrics = extract_psa_metrics(draw_results)
+    metrics['iteration'] = draw_idx + 1
+    return metrics
+
+
 def run_probabilistic_sensitivity_analysis(base_config: dict,
                                            psa_cfg: Optional[dict] = None,
                                            *,
                                            collect_draw_level: bool = False,
-                                           seed: Optional[int] = None) -> dict:
+                                           seed: Optional[int] = None,
+                                           n_jobs: Optional[int] = None) -> dict:
     """
     Execute a Monte Carlo PSA using the provided configuration.
     Returns summary 95% intervals plus optional draw-level metrics.
+
+    Args:
+        base_config: Base configuration dictionary
+        psa_cfg: PSA-specific configuration (optional)
+        collect_draw_level: If True, include all draw-level metrics in output
+        seed: Random seed for reproducibility
+        n_jobs: Number of parallel jobs. If None, uses psa_cfg['n_jobs'] or cpu_count().
+                Set to 1 to disable parallelization.
+
+    Returns:
+        Dictionary with 'summary' (95% CI), 'iterations', and optionally 'draws'
     """
     psa_meta = copy.deepcopy(psa_cfg or base_config.get('psa') or {})
     if not psa_meta.get('use', False):
@@ -2782,17 +2831,48 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
     if iterations <= 0:
         raise ValueError("PSA iterations must be a positive integer.")
 
+    # Determine number of parallel jobs
+    if n_jobs is None:
+        n_jobs = psa_meta.get('n_jobs', cpu_count())
+    n_jobs = max(1, int(n_jobs))  # Ensure at least 1
+
     base_seed = seed if seed is not None else psa_meta.get('seed')
     rng = np.random.default_rng(base_seed)
 
-    draw_metrics: List[dict] = []
-    for draw_idx in range(iterations):
-        draw_config = apply_psa_draw(base_config, psa_meta, rng)
-        draw_seed = int(rng.integers(0, 2**32 - 1))
-        draw_results = run_model(draw_config, seed=draw_seed)
-        metrics = extract_psa_metrics(draw_results)
-        metrics['iteration'] = draw_idx + 1
-        draw_metrics.append(metrics)
+    # Pre-generate all seeds for reproducibility
+    draw_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(iterations)]
+
+    # Prepare arguments for all iterations
+    psa_args = [
+        (draw_idx, base_config, psa_meta, draw_seeds[draw_idx])
+        for draw_idx in range(iterations)
+    ]
+
+    print(f"\nRunning PSA with {iterations} iterations using {n_jobs} parallel job(s)...")
+    if TQDM_AVAILABLE:
+        print("Progress tracking enabled (tqdm installed)")
+    else:
+        print("Install tqdm for progress tracking: pip install tqdm")
+
+    # Run PSA iterations in parallel (or serial if n_jobs=1)
+    if n_jobs == 1:
+        # Serial execution with progress bar
+        draw_metrics = []
+        for args in tqdm(psa_args, desc="PSA iterations", disable=not TQDM_AVAILABLE):
+            draw_metrics.append(_run_single_psa_iteration(args))
+    else:
+        # Parallel execution
+        with Pool(processes=n_jobs) as pool:
+            if TQDM_AVAILABLE:
+                # Use tqdm with parallel processing
+                draw_metrics = list(tqdm(
+                    pool.imap(_run_single_psa_iteration, psa_args),
+                    total=iterations,
+                    desc="PSA iterations"
+                ))
+            else:
+                # No progress bar for parallel execution without tqdm
+                draw_metrics = pool.map(_run_single_psa_iteration, psa_args)
 
     metrics_df = pd.DataFrame(draw_metrics)
     summary = summarize_psa_results(metrics_df)
@@ -2800,10 +2880,77 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
     payload = {
         'summary': summary,
         'iterations': iterations,
+        'n_jobs_used': n_jobs,
     }
     if collect_draw_level:
         payload['draws'] = metrics_df
     return payload
+
+
+# Output compression utilities
+
+def save_results_compressed(results: dict, filepath: Union[str, Path],
+                           compression_level: int = 6) -> None:
+    """
+    Save model results to a compressed pickle file.
+
+    Args:
+        results: Dictionary of results to save
+        filepath: Path where to save the file (should end with .pkl.gz)
+        compression_level: gzip compression level (1-9, higher = more compression)
+    """
+    filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    with gzip.open(filepath, 'wb', compresslevel=compression_level) as f:
+        pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Report file size
+    size_mb = filepath.stat().st_size / (1024 * 1024)
+    print(f"Saved compressed results to {filepath} ({size_mb:.2f} MB)")
+
+
+def load_results_compressed(filepath: Union[str, Path]) -> dict:
+    """
+    Load model results from a compressed pickle file.
+
+    Args:
+        filepath: Path to the compressed file
+
+    Returns:
+        Dictionary of results
+    """
+    filepath = Path(filepath)
+    with gzip.open(filepath, 'rb') as f:
+        results = pickle.load(f)
+    return results
+
+
+def save_dataframe_compressed(df: pd.DataFrame, filepath: Union[str, Path],
+                              format: str = 'parquet') -> None:
+    """
+    Save a DataFrame in compressed format.
+
+    Args:
+        df: DataFrame to save
+        filepath: Path where to save
+        format: 'parquet' (recommended) or 'csv' (with gzip)
+    """
+    filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    if format == 'parquet':
+        df.to_parquet(filepath, compression='gzip', index=False)
+    elif format == 'csv':
+        if not str(filepath).endswith('.gz'):
+            filepath = Path(str(filepath) + '.gz')
+        df.to_csv(filepath, index=False, compression='gzip')
+    else:
+        raise ValueError(f"Unsupported format: {format}")
+
+    size_mb = filepath.stat().st_size / (1024 * 1024)
+    print(f"Saved compressed DataFrame to {filepath} ({size_mb:.2f} MB)")
+
 
 # Visuals
 
