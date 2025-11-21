@@ -2831,10 +2831,16 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
     if iterations <= 0:
         raise ValueError("PSA iterations must be a positive integer.")
 
-    # Determine number of parallel jobs
+    # Determine number of parallel jobs (robust to None/Non-numeric inputs)
     if n_jobs is None:
-        n_jobs = psa_meta.get('n_jobs', cpu_count())
-    n_jobs = max(1, int(n_jobs))  # Ensure at least 1
+        n_jobs = psa_meta.get('n_jobs')
+    if n_jobs is None:
+        n_jobs = cpu_count()
+    try:
+        n_jobs = int(n_jobs)
+    except (TypeError, ValueError):
+        n_jobs = cpu_count()
+    n_jobs = max(1, n_jobs)  # Ensure at least 1
 
     base_seed = seed if seed is not None else psa_meta.get('seed')
     rng = np.random.default_rng(base_seed)
