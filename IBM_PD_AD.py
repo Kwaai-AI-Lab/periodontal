@@ -3242,6 +3242,103 @@ def run_two_level_psa(base_config: dict,
     return results
 
 
+def export_psa_results_to_excel(psa_results: dict,
+                                 path: str = "PSA_Results.xlsx",
+                                 include_draws: bool = False) -> None:
+    """
+    Export PSA results (from run_probabilistic_sensitivity_analysis or run_two_level_psa) to Excel.
+
+    Args:
+        psa_results: Results dictionary from PSA functions
+        path: Output Excel file path
+        include_draws: If True and draw-level data available, include in separate sheet
+    """
+    print(f"\nExporting PSA results to {path}...")
+
+    summary = psa_results.get('summary', {})
+    if not summary:
+        print("No PSA summary data available; nothing exported.")
+        return
+
+    with pd.ExcelWriter(path, engine='openpyxl') as writer:
+
+        # Sheet 1: PSA Summary (mean and 95% CI)
+        summary_rows = []
+        for metric, stats in summary.items():
+            summary_rows.append({
+                'Metric': metric,
+                'Mean': stats.get('mean', np.nan),
+                'Lower_95%_CI': stats.get('lower_95', np.nan),
+                'Upper_95%_CI': stats.get('upper_95', np.nan),
+                'CI_Width': stats.get('upper_95', np.nan) - stats.get('lower_95', np.nan)
+            })
+
+        summary_df = pd.DataFrame(summary_rows)
+        summary_df.to_excel(writer, sheet_name="PSA_Summary", index=False)
+
+        # Sheet 2: PSA Metadata
+        metadata_rows = []
+        metadata_rows.append({'Parameter': 'PSA Iterations',
+                             'Value': psa_results.get('iterations', 'N/A')})
+        metadata_rows.append({'Parameter': 'Parallel Jobs Used',
+                             'Value': psa_results.get('n_jobs_used', 'N/A')})
+
+        # Add two-level PSA info if available
+        if 'two_level_psa' in psa_results:
+            two_level_info = psa_results['two_level_psa']
+            metadata_rows.append({'Parameter': 'Method',
+                                 'Value': "Two-Level PSA (O'Hagan et al. 2007)"})
+            metadata_rows.append({'Parameter': 'Outer Iterations (N)',
+                                 'Value': two_level_info.get('n_outer', 'N/A')})
+            metadata_rows.append({'Parameter': 'Inner Population (n)',
+                                 'Value': two_level_info.get('n_inner', 'N/A')})
+            metadata_rows.append({'Parameter': 'Original Population',
+                                 'Value': two_level_info.get('original_population', 'N/A')})
+            metadata_rows.append({'Parameter': 'Reduction Factor',
+                                 'Value': f"{two_level_info.get('reduction_factor', 0):.1f}x"})
+            metadata_rows.append({'Parameter': 'Variance Pilot Used',
+                                 'Value': 'Yes' if two_level_info.get('variance_pilot_used') else 'No'})
+        else:
+            metadata_rows.append({'Parameter': 'Method',
+                                 'Value': 'Standard PSA (full population)'})
+
+        metadata_df = pd.DataFrame(metadata_rows)
+        metadata_df.to_excel(writer, sheet_name="PSA_Metadata", index=False)
+
+        # Sheet 3: Variance Components (if two-level PSA)
+        if 'two_level_psa' in psa_results and 'variance_components' in psa_results['two_level_psa']:
+            variance_comp = psa_results['two_level_psa']['variance_components']
+            variance_rows = []
+
+            for metric, components in variance_comp.items():
+                variance_rows.append({
+                    'Metric': metric,
+                    'Sigma_Between_Sq (Parameter Uncertainty)': components.get('sigma_between_sq', np.nan),
+                    'Sigma_Within_Sq (Stochastic Noise)': components.get('sigma_within_sq', np.nan),
+                    'Signal_to_Noise_Ratio': components.get('variance_ratio', np.nan)
+                })
+
+            if variance_rows:
+                variance_df = pd.DataFrame(variance_rows)
+                variance_df.to_excel(writer, sheet_name="Variance_Components", index=False)
+
+        # Sheet 4: Draw-level data (optional, can be large)
+        if include_draws and 'draws' in psa_results:
+            draws_df = psa_results['draws']
+            if isinstance(draws_df, pd.DataFrame) and not draws_df.empty:
+                # Limit to first 10,000 rows if very large (Excel has limits)
+                if len(draws_df) > 10000:
+                    print(f"  Warning: Draw data has {len(draws_df)} rows. Only exporting first 10,000 to Excel.")
+                    print(f"  Consider using save_dataframe_compressed() for full data.")
+                    draws_df = draws_df.head(10000)
+
+                draws_df.to_excel(writer, sheet_name="All_Draws", index=False)
+                print(f"  Included {len(draws_df)} draw-level records")
+
+    file_size_mb = Path(path).stat().st_size / (1024 * 1024)
+    print(f"Successfully exported PSA results to {path} ({file_size_mb:.2f} MB)")
+
+
 # Visuals
 
 def save_or_show(save_path, show=False, label="plot"):

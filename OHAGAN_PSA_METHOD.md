@@ -139,7 +139,14 @@ if __name__ == "__main__":
     # Save results
     save_results_compressed(psa_results, 'results/two_level_psa.pkl.gz')
 
-    # Save draw-level data as compressed Parquet
+    # Export PSA results to Excel
+    export_psa_results_to_excel(
+        psa_results,
+        path='results/PSA_Results.xlsx',
+        include_draws=False  # Set True to include all iterations (up to 10K rows)
+    )
+
+    # Save draw-level data as compressed Parquet (for full data)
     if 'draws' in psa_results:
         save_dataframe_compressed(
             psa_results['draws'],
@@ -196,6 +203,76 @@ Assumptions:
 The 95% confidence intervals from the two-level PSA should be nearly identical to traditional PSA because:
 - Parameter uncertainty dominates the CI width
 - Stochastic noise (σ²_within/n) is kept small relative to parameter variance
+
+## Exporting PSA Results
+
+### Excel Export
+
+Use the dedicated PSA Excel export function to save your results in a structured workbook:
+
+```python
+# Export PSA results to Excel
+export_psa_results_to_excel(
+    psa_results,
+    path='results/PSA_Results.xlsx',
+    include_draws=False  # Set True to include individual iterations (up to 10K)
+)
+```
+
+**Excel file contains multiple sheets:**
+
+1. **PSA_Summary**: Mean and 95% CI for all outcome metrics
+   - Metric name
+   - Mean value
+   - Lower 95% CI
+   - Upper 95% CI
+   - CI width
+
+2. **PSA_Metadata**: Run configuration details
+   - PSA iterations
+   - Parallel jobs used
+   - Method (Standard or Two-Level)
+   - Population sizes (N and n if two-level)
+   - Reduction factor
+
+3. **Variance_Components** (two-level PSA only):
+   - σ²_between (parameter uncertainty)
+   - σ²_within (stochastic noise)
+   - Signal-to-noise ratio for each metric
+
+4. **All_Draws** (optional, if include_draws=True):
+   - Individual results from each PSA iteration
+   - Limited to first 10,000 rows (Excel limits)
+   - For complete data, use `save_dataframe_compressed(..., format='parquet')`
+
+### Note on Model vs. PSA Exports
+
+There are now **two separate Excel export functions**:
+
+1. **`export_results_to_excel(model_results)`** - For single baseline model runs
+   - Time series data
+   - Age distributions
+   - Prevalence by stage
+   - Incidence rates
+   - Use after: `run_model()`
+
+2. **`export_psa_results_to_excel(psa_results)`** - For PSA uncertainty analysis
+   - Mean and 95% confidence intervals
+   - Variance decomposition
+   - PSA metadata
+   - Use after: `run_probabilistic_sensitivity_analysis()` or `run_two_level_psa()`
+
+**Example using both:**
+
+```python
+# Run baseline model
+baseline_results = run_model(general_config, seed=42)
+export_results_to_excel(baseline_results, path='Baseline_Model.xlsx')
+
+# Run PSA
+psa_results = run_two_level_psa(general_config, general_config['psa'], ...)
+export_psa_results_to_excel(psa_results, path='PSA_Results.xlsx')
+```
 
 ## Advanced Usage
 
