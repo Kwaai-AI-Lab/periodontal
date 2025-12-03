@@ -56,13 +56,17 @@ The mechanisms include systemic inflammation, bacteremia from oral pathogens (pa
 - Tunnel states for acute vs. chronic event phases
 - Probabilistic sensitivity analysis (10,000 Monte Carlo simulations)
 
-**Current Status**: Methodology complete, Excel model built, results pending
+**Current Status**: Methodology complete, Excel model built, **web application development in progress**
 
 **Files**:
 - `Intro_CVD.docx` - Background and literature review
 - `Methodology_CVD.docx` - Model structure and parameters
 - `Supplementary_Material_CVD.docx` - Technical appendix (partial)
 - `PD_CVD_markov - PSA On.xlsm` - Excel-based Markov model
+- `backend/` - FastAPI backend (in development)
+- `frontend/` - React frontend (planned)
+
+**Web Application**: A modern web interface is being developed to make this model accessible to researchers without Excel expertise. See [TODO.md](TODO.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ## Repository Structure
 
@@ -70,6 +74,8 @@ The mechanisms include systemic inflammation, bacteremia from oral pathogens (pa
 periodontal/
 ├── README.md                           # This file
 ├── LICENSE                             # MIT License
+├── TODO.md                             # Task list for contributors
+├── CONTRIBUTING.md                     # Contributor guidelines
 ├── Intro_AD.docx                      # AD study introduction
 ├── Intro_CVD.docx                     # CVD study introduction
 ├── Methodology_AD.docx                # AD model methodology
@@ -77,8 +83,48 @@ periodontal/
 ├── Results_AD.docx                    # AD results (pending)
 ├── Supplementary_Material_AD.docx     # AD technical appendix
 ├── Supplementary_Material_CVD.docx    # CVD technical appendix
-└── PD_CVD_markov - PSA On.xlsm       # CVD Markov model
+├── PD_CVD_markov - PSA On.xlsm       # CVD Markov model (Excel)
+├── backend/                            # CVD web app backend (FastAPI)
+│   ├── models/                         # Markov engine, PSA engine
+│   ├── api/                            # REST API endpoints
+│   ├── utils/                          # Calculations, distributions
+│   ├── tests/                          # Backend tests
+│   └── requirements.txt                # Python dependencies
+└── frontend/                           # CVD web app frontend (React, planned)
 ```
+
+## CVD Web Application (In Development)
+
+A modern web application is being developed to make the CVD Markov model accessible to researchers without requiring Excel expertise. The application will enable:
+
+**Features:**
+- **Parameter Adjustment:** Modify baseline hazards, treatment effects, costs, and utilities through an intuitive web interface
+- **Simulation Execution:** Run deterministic base case analysis (1-2 seconds) or probabilistic sensitivity analysis (60-90 seconds with 10,000 Monte Carlo iterations)
+- **Interactive Visualizations:**
+  - Cost-effectiveness plane (scatter plot with 10,000 PSA iterations)
+  - Cost-effectiveness acceptability curve (CEAC)
+  - Markov trace (state occupancy over time)
+  - Summary statistics with 95% confidence intervals
+- **Results Export:** Download results as Excel workbooks, CSV files, or PNG charts
+
+**Technology Stack:**
+- **Backend:** Python 3.11+, FastAPI, NumPy, pandas
+- **Frontend:** React 18+, Redux Toolkit, Chart.js, Plotly
+- **Testing:** pytest (backend), Jest (frontend)
+
+**Development Status:**
+- Phase 1 (Backend - Markov Engine): In Progress
+- Phase 2 (Backend - PSA Implementation): Planned
+- Phase 3 (Backend - API Endpoints): Planned
+- Phase 4 (Frontend - React UI): Planned
+- Phase 5 (Integration & Testing): Planned
+
+**Contributing:**
+- See [TODO.md](TODO.md) for available tasks
+- See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
+- Check the implementation plan at `.claude/plans/distributed-discovering-balloon.md`
+
+**Timeline:** 7-8 weeks for full implementation
 
 ## Methodology Summary
 
@@ -171,14 +217,29 @@ Both studies are grounded in extensive systematic reviews and meta-analyses:
 
 ## Contributing
 
-This is an active research project. Contributions from health economists, epidemiologists, periodontal researchers, and data scientists are welcome.
+This is an active research project. Contributions from health economists, epidemiologists, periodontal researchers, data scientists, and software developers are welcome.
 
-**Areas for Contribution**:
-- Model validation and calibration
-- Additional disease pathway modeling
-- Software development for simulator
-- Clinical data for model validation
-- Literature review and evidence synthesis
+**Getting Started:**
+1. Read [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines
+2. Check [TODO.md](TODO.md) for available tasks
+3. Review the implementation plan at `.claude/plans/distributed-discovering-balloon.md`
+4. Choose a task that matches your skills and interests
+5. Create a branch, implement your changes, and submit a pull request
+
+**Areas for Contribution:**
+- **Backend Development:** Python, FastAPI, Markov modeling, PSA implementation
+- **Frontend Development:** React, Redux, data visualization (Chart.js, Plotly)
+- **Testing & QA:** Unit tests, integration tests, validation against Excel
+- **Research & Validation:** Model calibration, NICE guidelines compliance, literature review
+- **Documentation:** User guides, API documentation, tutorials
+- **DevOps:** Deployment setup, Docker, CI/CD pipelines
+
+**Skills Needed:**
+- Python 3.11+ (backend developers)
+- React 18+ / JavaScript (frontend developers)
+- Health economics or epidemiology (research validation)
+- Scientific computing (NumPy, pandas, statistical distributions)
+- Software testing (pytest, Jest)
 
 ## Citation
 
