@@ -1,10 +1,12 @@
 # Dementia progression model (hazard-based), using basline data from 2023
 
+import os
 import random
 import math
 import copy
 import pickle
 import gzip
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from collections import Counter, defaultdict
@@ -550,8 +552,8 @@ general_config = {
         # Sex-specific constants (no age buckets) until more granular evidence is available.
         'smoking': {
             'prevalence': {
-                'female': 0.114, #(VERIFIED, ONS)
-                'male': 0.096,    #(VERIFIED, ONS)
+                'female': 0.096, #(VERIFIED, ONS)
+                'male': 0.0114,    #(VERIFIED, ONS)
             },
             'relative_risks': {
                 'onset': {
@@ -574,8 +576,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.50,
-                'male': 0.50,
+                'female': 0.25,
+                'male': 0.25,
             },
             'relative_risks': {
                 'onset': {
@@ -4511,6 +4513,75 @@ def export_results_to_excel(model_results, path="PD_AD_PD50.xlsx"):
 
 # Run & output
 
+
+# Optional calibration plots (disabled by default; enable via RUN_CALIBRATION_PLOTS=1)
+def run_calibration_prevalence_plots():
+    data = [
+        [35, 49, "F", 0.0001, 0.000776677],
+        [50, 64, "F", 0.0012, 0.003178285],
+        [65, 79, "F", 0.0178, 0.024883946],
+        [80, None, "F", 0.1244, 0.13821326],
+        [35, 49, "M", 0.0001, 0.000971348],
+        [50, 64, "M", 0.0013, 0.003344429],
+        [65, 79, "M", 0.0168, 0.023354982],
+        [80, None, "M", 0.0910, 0.10122974],
+    ]
+    df = pd.DataFrame(data, columns=["age_lower", "age_upper", "sex", "obs", "pred"])
+    df["age_band"] = df.apply(
+        lambda r: f"{int(r.age_lower)}+" if pd.isna(r.age_upper)
+        else f"{int(r.age_lower)}-{int(r.age_upper)}", axis=1
+    )
+
+    save_dir = Path(r"C:\Users\EdwardCoote\OneDrive\DementiaModel\plots")
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    def ols_fit(x, y):
+        x = np.asarray(x, dtype=float)
+        y = np.asarray(y, dtype=float)
+        X = np.column_stack((np.ones_like(x), x))
+        beta = np.linalg.inv(X.T @ X) @ (X.T @ y)
+        y_hat = X @ beta
+        resid = y - y_hat
+        ss_tot = np.sum((y - y.mean()) ** 2)
+        ss_res = np.sum(resid ** 2)
+        r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+        return {"alpha": beta[0], "beta": beta[1], "r2": r2}
+
+    def run_and_save(sub, sex_label):
+        res = ols_fit(sub["pred"], sub["obs"])
+        alpha, beta, r2 = res["alpha"], res["beta"], res["r2"]
+        print(f"\nSex = {sex_label}")
+        print(f"  alpha (intercept): {alpha:.6f}")
+        print(f"  beta (slope):     {beta:.6f}")
+        print(f"  R^2:               {r2:.3f}")
+
+        plt.figure(figsize=(6, 6))
+        plt.scatter(sub["pred"], sub["obs"], s=90)
+        xmax = max(sub["pred"].max(), sub["obs"].max()) * 1.05
+        x = np.linspace(0, xmax, 100)
+        plt.plot(x, x, "k--", label="1:1 line")
+        plt.plot(x, alpha + beta * x, "r-", label=f"Fitted (beta={beta:.2f})")
+        for _, row in sub.iterrows():
+            plt.annotate(row["age_band"], (row["pred"], row["obs"]), xytext=(4, 4),
+                         textcoords="offset points", fontsize=8)
+        plt.xlabel("Predicted prevalence (2024)")
+        plt.ylabel("Observed prevalence (2024)")
+        plt.title(f"Calibration - Prevalence 2024 ({sex_label})")
+        plt.legend()
+        plt.grid(True, linestyle="--", alpha=0.4)
+        plt.tight_layout()
+
+        file_path = save_dir / f"calibration_prevalence_{sex_label}.png"
+        plt.savefig(file_path, dpi=300)
+        plt.close()
+        print(f"  Plot saved to: {file_path}")
+        return res
+
+    res_f = run_and_save(df[df["sex"] == "F"], "Female")
+    res_m = run_and_save(df[df["sex"] == "M"], "Male")
+    return {"female": res_f, "male": res_m}
+
+
 if __name__ == "__main__":
     run_seed = 42
     model_results = run_model(general_config, seed=run_seed)
@@ -4556,7 +4627,6 @@ if __name__ == "__main__":
         run_standard_psa = not psa_cfg.get('two_level_only', False)
 
         if run_standard_psa:
-            # Standard PSA (full population per draw)
             psa_results = run_probabilistic_sensitivity_analysis(
                 general_config,
                 psa_cfg,
@@ -4583,12 +4653,11 @@ if __name__ == "__main__":
                     hi = stats.get('upper_95')
                     print(f"  {metric}: mean={mean_val:.2f}, 95% CI [{lo:.2f}, {hi:.2f}]")
 
-        # Two-level ANOVA PSA (reduced population per draw)
         two_level_results = run_two_level_psa(
             general_config,
             psa_cfg,
             n_outer=psa_cfg.get('iterations', 1000),
-            variance_pilot_results=None,  # supply pilot output here if available
+            variance_pilot_results=None,
             collect_draw_level=False,
             seed=run_seed,
             n_jobs=psa_cfg.get('n_jobs')
@@ -4609,14 +4678,11 @@ if __name__ == "__main__":
                 hi = stats.get('upper_95')
                 print(f"  {metric}: mean={mean_val:.2f}, 95% CI [{lo:.2f}, {hi:.2f}]")
 
-    # After: model_results = run_model(general_config, seed=run_seed)
-
-    # Run both diagnostics (set show_plots=True if you want them onscreen as well as saved)
     if general_config.get('enable_constant_hazard_checks', False):
         run_constant_hazard_diagnostics(
             model_results,
             general_config,
-            tolerance=0.05,     # tighten/loosen as you like
+            tolerance=0.05,
             show_plots=False
         )
 
@@ -4633,80 +4699,31 @@ if __name__ == "__main__":
     plot_lifetime_risk_by_entry_age(model_results, show=True)
     plot_onset_hazard_vs_age_from_base_prob(general_config, show=True)
     plot_onset_probability_vs_age_from_base_prob(general_config, show=True)
-    export_results_to_excel(model_results)
 
-import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+    excel_output_path = Path("results") / "Baseline_Model.xlsx"
+    excel_output_path.parent.mkdir(parents=True, exist_ok=True)
 
-# -------- 1. Data (paste directly) --------
-data = [
-    [35, 49, "F", 0.0001, 0.000776677],
-    [50, 64, "F", 0.0012, 0.003178285],
-    [65, 79, "F", 0.0178, 0.024883946],
-    [80, None, "F", 0.1244, 0.13821326],
-    [35, 49, "M", 0.0001, 0.000971348],
-    [50, 64, "M", 0.0013, 0.003344429],
-    [65, 79, "M", 0.0168, 0.023354982],
-    [80, None, "M", 0.0910, 0.10122974],
-]
-df = pd.DataFrame(data, columns=["age_lower","age_upper","sex","obs","pred"])
-df["age_band"] = df.apply(
-    lambda r: f"{int(r.age_lower)}+" if pd.isna(r.age_upper)
-    else f"{int(r.age_lower)}-{int(r.age_upper)}", axis=1
-)
+    def _save_fallback(exc: Exception):
+        fallback_path = excel_output_path.with_name(f"{excel_output_path.stem}_export_failed.pkl.gz")
+        try:
+            save_results_compressed(model_results, fallback_path)
+            print(f"Excel export failed ({exc}); raw results saved to {fallback_path} for recovery.")
+        except Exception as save_exc:
+            print(f"Excel export failed ({exc}) and fallback save also failed ({save_exc}).")
 
-# -------- 2. Output folder --------
-save_dir = r"C:\Users\EdwardCoote\OneDrive\DementiaModel\plots"
-os.makedirs(save_dir, exist_ok=True)
+    try:
+        export_results_to_excel(model_results, path=str(excel_output_path))
+    except PermissionError as exc:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        alt_path = excel_output_path.with_name(f"{excel_output_path.stem}_{timestamp}.xlsx")
+        try:
+            export_results_to_excel(model_results, path=str(alt_path))
+            print(f"Primary Excel path locked ({exc}); wrote to {alt_path} instead.")
+        except Exception as exc2:
+            _save_fallback(exc2)
+    except Exception as exc:
+        _save_fallback(exc)
 
-# -------- 3. Simple OLS regression (no statsmodels) --------
-def ols_fit(x, y):
-    x = np.asarray(x, dtype=float)
-    y = np.asarray(y, dtype=float)
-    X = np.column_stack((np.ones_like(x), x))
-    beta = np.linalg.inv(X.T @ X) @ (X.T @ y)
-    y_hat = X @ beta
-    resid = y - y_hat
-    ss_tot = np.sum((y - y.mean())**2)
-    ss_res = np.sum(resid**2)
-    r2 = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
-    return {"alpha": beta[0], "beta": beta[1], "r2": r2}
+    if os.environ.get("RUN_CALIBRATION_PLOTS", "0") == "1":
+        run_calibration_prevalence_plots()
 
-# -------- 4. Run regression + save plot --------
-def run_and_save(sub, sex_label, save_dir):
-    res = ols_fit(sub["pred"], sub["obs"])
-    alpha, beta, R2 = res["alpha"], res["beta"], res["r2"]
-    print(f"\nSex = {sex_label}")
-    print(f"  α (intercept): {alpha:.6f}")
-    print(f"  β (slope):     {beta:.6f}")
-    print(f"  R²:            {R2:.3f}")
-
-    plt.figure(figsize=(6,6))
-    plt.scatter(sub["pred"], sub["obs"], s=90)
-    xmax = max(sub["pred"].max(), sub["obs"].max()) * 1.05
-    x = np.linspace(0, xmax, 100)
-    plt.plot(x, x, "k--", label="1:1 line")
-    plt.plot(x, alpha + beta*x, "r-", label=f"Fitted (β={beta:.2f})")
-    for _, r in sub.iterrows():
-        plt.annotate(r["age_band"], (r["pred"], r["obs"]), xytext=(4,4),
-                     textcoords="offset points", fontsize=8)
-    plt.xlabel("Predicted prevalence (2024)")
-    plt.ylabel("Observed prevalence (2024)")
-    plt.title(f"Calibration — Prevalence 2024 ({sex_label})")
-    plt.legend()
-    plt.grid(True, linestyle="--", alpha=0.4)
-    plt.tight_layout()
-
-    # Save the plot
-    file_path = os.path.join(save_dir, f"calibration_prevalence_{sex_label}.png")
-    plt.savefig(file_path, dpi=300)
-    plt.close()
-    print(f"  → Plot saved to: {file_path}")
-
-    return res
-
-# -------- 5. Run for both sexes --------
-res_f = run_and_save(df[df["sex"]=="F"], "Female", save_dir)
-res_m = run_and_save(df[df["sex"]=="M"], "Male", save_dir)
