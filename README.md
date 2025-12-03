@@ -56,14 +56,36 @@ The mechanisms include systemic inflammation, bacteremia from oral pathogens (pa
 - Tunnel states for acute vs. chronic event phases
 - Probabilistic sensitivity analysis (10,000 Monte Carlo simulations)
 
-**Current Status**: Methodology complete, Excel model built, **web application development in progress**
+**Current Status**:
+- ✅ Methodology complete
+- ✅ Excel model built and validated
+- ✅ Research paper drafted (3,744 words)
+- ✅ Figures generated (tornado plot, CE plane, CEAC)
+- 🔄 Supplementary material in progress
+- 🔄 Web application development initiated
+
+**Paper Progress (Ready for Submission):**
+- Complete manuscript: `CVD_consolidated.md` (3,744 words)
+- Publication-quality figures (600 DPI):
+  - `plots/figure1_tornado_plot.png` - One-way sensitivity analysis
+  - `plots/figure2_ce_plane.png` - Cost-effectiveness plane (10,000 PSA iterations)
+  - `plots/figure3_ceac.png` - Cost-effectiveness acceptability curve
+- Tables: Base case results and PSA summary statistics
+- References: 50 citations from peer-reviewed literature
+
+**Remaining Tasks:**
+- Supplementary material (detailed parameter tables, CHEERS checklist)
+- Final formatting for journal submission
 
 **Files**:
+- `CVD_consolidated.md` - Complete research paper
 - `Intro_CVD.docx` - Background and literature review
 - `Methodology_CVD.docx` - Model structure and parameters
-- `Supplementary_Material_CVD.docx` - Technical appendix (partial)
+- `Supplementary_Material_CVD.docx` - Technical appendix (in progress)
 - `PD_CVD_markov - PSA On.xlsm` - Excel-based Markov model
-- `backend/` - FastAPI backend (in development)
+- `generate_cvd_figures.py` - Python script for figure generation
+- `plots/` - Publication-ready figures
+- `backend/` - FastAPI backend (initiated)
 - `frontend/` - React frontend (planned)
 
 **Web Application**: A modern web interface is being developed to make this model accessible to researchers without Excel expertise. See [TODO.md](TODO.md) and [CONTRIBUTING.md](CONTRIBUTING.md) for details.
