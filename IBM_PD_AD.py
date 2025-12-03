@@ -302,7 +302,7 @@ general_config = {
 
     # Probabilistic sensitivity analysis configuration (sampling specs defined below)
     'psa': {
-        'use': True,
+        'use': False,
         'iterations': 1000,
         'seed': 20231113,
         'relative_sd_beta': 0.10,   # +/-10% relative SD for beta-distributed parameters
@@ -533,8 +533,8 @@ general_config = {
         # Sex-specific constants (no age buckets) until more granular evidence is available.
         'smoking': {
             'prevalence': {
-                'female': 0.114, #(VERIFIED, ONS)
-                'male': 0.096,    #(VERIFIED, ONS)
+                'female': 0.096, #(VERIFIED, ONS)
+                'male': 0.114,    #(VERIFIED, ONS)
             },
             'relative_risks': {
                 'onset': {
@@ -605,8 +605,8 @@ general_config = {
         },
         'CVD_disease': {
             'prevalence': {
-                'female': 0.003,   #(VERIFIED, British Heart Foundation)
-                'male': 0.003,     #(VERIFIED, British Heart Foundation)
+                'female': 0.095,   #(VERIFIED, British Heart Foundation)
+                'male': 0.095,     #(VERIFIED, British Heart Foundation)
             },
             'relative_risks': {
                 'onset': {
