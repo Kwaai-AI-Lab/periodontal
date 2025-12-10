@@ -576,8 +576,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.75,
-                'male': 0.75,
+                'female': 0.25,
+                'male': 0.25,
             },
             'relative_risks': {
                 'onset': {
@@ -2818,7 +2818,8 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
 
     Args:
         base_config: Base configuration dictionary
-        psa_cfg: PSA-specific configuration (optional)
+        psa_cfg: PSA-specific configuration (optional). Can include 'original_population'
+                 to automatically scale new entrants when running with reduced population.
         collect_draw_level: If True, include all draw-level metrics in output
         seed: Random seed for reproducibility
         n_jobs: Number of parallel jobs. If None, uses psa_cfg['n_jobs'] or cpu_count().
@@ -2826,6 +2827,11 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
 
     Returns:
         Dictionary with 'summary' (95% CI), 'iterations', and optionally 'draws'
+
+    Note:
+        When running PSA with reduced population (e.g., 1% for faster computation),
+        set psa_cfg['original_population'] to the full population size. This will
+        automatically scale new entrants proportionally to maintain correct dynamics.
     """
     psa_meta = copy.deepcopy(psa_cfg or base_config.get('psa') or {})
     if not psa_meta.get('use', False):
@@ -2849,12 +2855,35 @@ def run_probabilistic_sensitivity_analysis(base_config: dict,
     base_seed = seed if seed is not None else psa_meta.get('seed')
     rng = np.random.default_rng(base_seed)
 
+    # Check if population scaling is needed for new entrants
+    # This ensures that when running PSA with reduced population (e.g., 1%),
+    # the new entrants are also scaled proportionally
+    working_config = base_config
+    original_pop = psa_meta.get('original_population')
+    current_pop = base_config.get('population')
+
+    if original_pop and current_pop and original_pop != current_pop:
+        print(f"\nScaling new entrants: population {current_pop:,} / {original_pop:,} = {current_pop/original_pop:.2%}")
+        working_config = _with_scaled_population_and_entrants(
+            base_config,
+            new_population=current_pop,
+            original_population=original_pop
+        )
+        # Log the scaling for transparency
+        if 'open_population' in working_config:
+            op = working_config['open_population']
+            if op.get('use', False):
+                scaled_entrants = op.get('entrants_per_year', 0)
+                original_entrants = base_config.get('open_population', {}).get('entrants_per_year', 0)
+                if original_entrants != scaled_entrants:
+                    print(f"  New entrants scaled: {original_entrants:,} → {scaled_entrants:,} per year")
+
     # Pre-generate all seeds for reproducibility
     draw_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(iterations)]
 
     # Prepare arguments for all iterations
     psa_args = [
-        (draw_idx, base_config, psa_meta, draw_seeds[draw_idx])
+        (draw_idx, working_config, psa_meta, draw_seeds[draw_idx])
         for draw_idx in range(iterations)
     ]
 
