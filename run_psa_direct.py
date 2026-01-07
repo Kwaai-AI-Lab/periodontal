@@ -16,8 +16,11 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='repla
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 # Import model functions
-from IBM_PD_AD import general_config, save_results_compressed
-from psa_with_timeseries import run_psa_with_timeseries
+from IBM_PD_AD import (
+    general_config,
+    save_results_compressed,
+    run_probabilistic_sensitivity_analysis,
+)
 
 # Configuration
 PSA_ITERATIONS = 500
@@ -55,6 +58,16 @@ print(f"  - Reduction factor: {original_population/scaled_population:.0f}x")
 # Create scaled configuration
 psa_config = copy.deepcopy(general_config)
 psa_config['population'] = scaled_population
+# Ensure PSA sampling is enabled and carries required metadata
+psa_cfg = copy.deepcopy(psa_config.get('psa', {}))
+psa_cfg.update({
+    'use': True,
+    'iterations': PSA_ITERATIONS,
+    'seed': SEED,
+    # Provide original population so entrant scaling stays proportional
+    'original_population': original_population,
+})
+psa_config['psa'] = psa_cfg
 
 # Scale entrants proportionally
 if psa_config.get('open_population', {}).get('use', False):
@@ -79,12 +92,12 @@ try:
 
     start_time = datetime.now()
 
-    psa_results = run_psa_with_timeseries(
-        config=psa_config,
-        iterations=PSA_ITERATIONS,
-        n_jobs=1,  # Sequential execution (avoids Windows multiprocessing issues)
+    psa_results = run_probabilistic_sensitivity_analysis(
+        psa_config,
+        psa_cfg,
+        collect_draw_level=True,  # keep draws so we can scale/inspect them
         seed=SEED,
-        output_dir=None  # Don't auto-save, we'll handle it
+        n_jobs=1,  # Sequential execution (avoids Windows multiprocessing issues)
     )
 
     end_time = datetime.now()

@@ -269,6 +269,12 @@ general_config = {
     "open_population": {
         "use": True,                 # set True to enable new entrants
         "entrants_per_year": 800000,
+        "entrants_growth": {
+            "use": True,
+            # Annualized growth from +13.17% over 2019-2040[Data from ONS], applied from 2023 onward.
+            "annual_rate": 0.0059088616,
+            "reference_year": 2023,
+        },
         "fixed_entry_age": None,     # allow age distribution to evolve over time
         # entrant age-bands scale relative to baseline weights by milestone year
         "age_band_multiplier_schedule": {
@@ -576,8 +582,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.25,
-                'male': 0.25,
+                'female': 0.50,
+                'male': 0.50,
             },
             'relative_risks': {
                 'onset': {
@@ -750,25 +756,16 @@ general_config = {
 
     'discount_rate_annual': 0.035,
 
-    # Utility multipliers by stage/setting (patient & caregiver)
-    'utility_multipliers': {
-        'patient': {
-            'cognitively_normal': {'home': 1.0, 'institution': 0.95},
-            'mild': {'home': 0.85, 'institution': 0.80},
-            'moderate': {'home': 0.70, 'institution': 0.65},
-            'severe': {'home': 0.50, 'institution': 0.45},
-        },
-        'caregiver': {
-            'cognitively_normal': {'home': 1.0, 'institution': 1.0},
-            'mild': {'home': 0.90, 'institution': 0.95},
-            'moderate': {'home': 0.80, 'institution': 0.90},
-            'severe': {'home': 0.70, 'institution': 0.85},
-        },
-    },
+    # Discounting convention for costs/QALYs:
+    # - 'start': start-of-cycle discounting (first cycle undiscounted)
+    # - 'mid': mid-cycle discounting (half-cycle correction)
+    # - 'end': end-of-cycle discounting (first cycle discounted by 1 year when dt=1)
+    'discounting_timing': 'end',
+
     # Caregiver utility table (stage/setting specific, age-invariant approximation) (VERIFIED, Reed et al., 2017)
+    # Note: Caregivers only apply for home setting with mild/moderate/severe stages
     'stage_age_qalys': {
         'caregiver': {
-            'cognitively_normal': {'default': {0: 0.91}},
             'mild': {
                 'home': {0: 0.86},
             },
@@ -785,13 +782,13 @@ general_config = {
         'mild': 0.71,
         'moderate': 0.64,
         'severe': 0.38,
+
     },
 
     # Annual costs (GBP) by stage/setting  (VERIFIED, Annual costs of dementia)
     'costs': {
         'cognitively_normal': {
             'home': {'nhs': 0, 'informal': 0},
-            'institution': {'nhs': 0, 'informal': 0},
         },
         'mild': {
             'home': {'nhs': 7466.70, 'informal': 10189.55},
@@ -979,7 +976,22 @@ def add_new_entrants(population_state: Dict[int, dict],
     if not op.get("use", False):
         return next_id_start, 0
 
-    n_new = int(op.get("entrants_per_year", 0))
+    base_entrants = float(op.get("entrants_per_year", 0) or 0)
+    growth_cfg = op.get("entrants_growth", {}) or {}
+    n_new = base_entrants
+    if growth_cfg.get("use", False):
+        try:
+            annual_rate = float(growth_cfg.get("annual_rate", 0.0))
+        except (TypeError, ValueError):
+            annual_rate = 0.0
+        try:
+            reference_year = int(growth_cfg.get("reference_year", calendar_year))
+        except (TypeError, ValueError):
+            reference_year = calendar_year
+        if annual_rate > -1.0:
+            years_since_ref = calendar_year - reference_year
+            n_new = base_entrants * ((1.0 + annual_rate) ** years_since_ref)
+    n_new = int(round(n_new))
     if n_new <= 0:
         return next_id_start, 0
 
@@ -1575,13 +1587,7 @@ def get_qaly_by_age_and_sex(age: float,
     """Return healthy QALY weight using utility_norms_by_age (per sex if provided)."""
     utility_norms = config.get('utility_norms_by_age')
     value = get_age_specific_utility(age, utility_norms, sex)
-    if value:
-        return value
-
-    fallback = config.get('qalys_by_age')
-    if isinstance(fallback, dict) and fallback:
-        return get_age_specific_utility(age, fallback)
-    return 0.0
+    return value if value else 0.0
 
 def get_dementia_stage_qaly(stage: str,
                             sex: Optional[str],
@@ -1652,17 +1658,9 @@ def get_dementia_stage_qaly(stage: str,
 def get_caregiver_qaly(age: float,
                        sex: Optional[str],
                        config: dict) -> Optional[float]:
-    """Return caregiver QALY weight if caregiver tables are provided."""
-    sex_key = _normalise_sex(sex)
-    tables_by_sex = config.get('caregiver_qalys_by_age_and_sex')
-    if isinstance(tables_by_sex, dict) and tables_by_sex:
-        sex_table = tables_by_sex.get(sex_key) or tables_by_sex.get('all')
-        if isinstance(sex_table, dict) and sex_table:
-            return get_age_specific_utility(age, sex_table)
-
-    caregiver_table = config.get('caregiver_qalys_by_age')
-    if isinstance(caregiver_table, dict) and caregiver_table:
-        return get_age_specific_utility(age, caregiver_table)
+    """Return caregiver QALY weight if caregiver tables are provided.
+    Note: No caregiver-specific age tables are currently defined in config.
+    This function exists for extensibility but returns None in current model."""
     return None
 
 def get_age_multiplier(age: int, age_risk_multipliers: Dict[str, Dict[int, float]], transition: str) -> float:
@@ -1695,14 +1693,6 @@ def get_age_hr_for_transition(age: int, config: dict, transition: str) -> float:
         return math.exp(base_beta * (age - ref_age))
     return get_age_multiplier(age, config.get('age_risk_multipliers', {}), transition)
 
-# ---- NEW helper: per-transition exponent for each risk's RR ----
-def _get_rr_weight(config: dict, risk_name: str, transition_key: str) -> float:
-    """Return the exponent to apply to a risk factor RR for a given transition."""
-    tw = config.get('transition_rr_weights', {}) or {}
-    per_risk = tw.get(risk_name, tw.get('default', {})) or {}
-    return float(per_risk.get(transition_key, 1.0))
-
-# ---- UPDATED: apply_hazard_ratios now raises RR to a weight and takes config ----
 def apply_hazard_ratios(h_base: float,
                         risk_factors: Dict[str, bool],
                         risk_defs: Dict[str, dict],
@@ -1716,8 +1706,7 @@ def apply_hazard_ratios(h_base: float,
         if not active:
             continue
         rr = get_relative_risk_for_person(risk_defs.get(factor, {}), transition_key, age, sex)
-        w = _get_rr_weight(config, factor, transition_key)
-        h *= (rr ** w)
+        h *= rr
     return h
 
 def transition_hazard_from_config(config: dict, person: dict, transition_key: str) -> float:
@@ -1824,13 +1813,7 @@ def initialize_population(population: int,
                 stage0 = 'cognitively_normal'
 
         if stage0 is None:
-            stage_weights = get_stage_mix_for_age_and_sex(
-                config.get('initial_stage_mix_by_age_band'),
-                age,
-                sex
-            )
-            if stage_weights is None:
-                stage_weights = get_stage_mix_for_sex(stage_mix_config, sex)
+            stage_weights = get_stage_mix_for_sex(stage_mix_config, sex)
             stage0 = sample_stage_from_mix(stage_weights)
 
         population_state[individual] = {
@@ -1872,57 +1855,91 @@ def advance_population_state(population_state: Dict[int, dict],
 
 # Accumulation (QALYs/costs)
 
+def _clamp_utility(value: Any) -> float:
+    """Clamp an absolute utility weight to [0, 1] with safe fallbacks."""
+    try:
+        u = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if u < 0.0:
+        return 0.0
+    if u > 1.0:
+        return 1.0
+    return u
+
+def _discount_factor(time_step: int, config: dict) -> float:
+    """Return the per-cycle discount factor according to config['discounting_timing']."""
+    r = float(config.get('discount_rate_annual', 0.0) or 0.0)
+    if r <= 0.0:
+        return 1.0
+
+    dt = float(config.get('time_step_years', 1.0) or 1.0)
+    timing = str(config.get('discounting_timing', 'end') or 'end').strip().lower()
+    if timing == 'start':
+        exponent = max(0.0, (time_step - 1) * dt)
+    elif timing == 'mid':
+        exponent = max(0.0, (time_step - 0.5) * dt)
+    else:  # 'end'
+        exponent = max(0.0, time_step * dt)
+    return 1.0 / ((1.0 + r) ** exponent)
+
 def apply_stage_accumulations(individual_data: dict, config: dict, time_step: int) -> None:
     """
     Update cumulative QALYs and costs for the current cycle given stage and living setting.
     Applies NICE discounting at rate config['discount_rate_annual'] to this cycle's flows.
-    Discounting is end-of-cycle: factor = 1 / (1 + r) ** (time_step * dt)
+    Discount timing is controlled by config['discounting_timing'] in {'start','mid','end'}.
     """
-    if not individual_data['alive']:
+    dt = float(config.get('time_step_years', 1.0) or 1.0)
+    cycle_time_alive = float(individual_data.get('_cycle_time_alive', dt) or 0.0)
+    if cycle_time_alive <= 0.0:
         return
 
-    stage = individual_data['dementia_stage']
-    setting = individual_data['living_setting']
-    utility_norm = get_age_specific_utility(
-        individual_data['age'],
-        config['utility_norms_by_age'],
-        individual_data.get('sex')
-    )
-
-    stage_age_qalys = config.get('stage_age_qalys')
-    patient_weight = get_stage_age_qaly(
-        'patient', stage, individual_data['age'], setting, stage_age_qalys
-    )
-
-    caregiver_weight: float
-    if setting == 'home':
-        caregiver_override = get_stage_age_qaly(
-            'caregiver', stage, individual_data['age'], setting, stage_age_qalys
-        )
-        if caregiver_override is None:
-            caregiver_mult = config['utility_multipliers']['caregiver'].get(stage, {}).get(setting, 0.0)
-            caregiver_weight = utility_norm * caregiver_mult
-        else:
-            caregiver_weight = caregiver_override
+    alive = bool(individual_data.get('alive', False))
+    if alive:
+        stage = individual_data['dementia_stage']
+        setting = individual_data['living_setting']
     else:
-        caregiver_weight = 0.0
+        stage = individual_data.get('_cycle_stage_for_accrual')
+        setting = individual_data.get('_cycle_setting_for_accrual')
+        if stage is None or setting is None:
+            return
 
+    sex = individual_data.get('sex')
+    age = individual_data['age']
+
+    # Patient utility (absolute, clamped to [0, 1])
+    stage_age_qalys = config.get('stage_age_qalys')
+    patient_weight = get_stage_age_qaly('patient', stage, age, setting, stage_age_qalys)
     if patient_weight is None:
-        patient_mult = config['utility_multipliers']['patient'].get(stage, {}).get(setting, 0.0)
-        patient_weight = utility_norm * patient_mult
+        patient_stage = get_dementia_stage_qaly(stage, sex, config)
+        if patient_stage is not None:
+            patient_weight = patient_stage
+        else:
+            patient_weight = get_qaly_by_age_and_sex(age, sex, config)
+    patient_weight = _clamp_utility(patient_weight)
+
+    # Caregiver effect as incremental disutility (absolute utilities clamped; incremental may be negative).
+    caregiver_weight: float = 0.0
+    if setting == 'home' and stage in ('mild', 'moderate', 'severe'):
+        caregiver_utility = get_stage_age_qaly('caregiver', stage, age, setting, stage_age_qalys)
+        if caregiver_utility is None:
+            caregiver_utility = get_caregiver_qaly(age, sex, config)
+        if caregiver_utility is None:
+            caregiver_utility = get_qaly_by_age_and_sex(age, sex, config)
+
+        caregiver_utility = _clamp_utility(caregiver_utility)
+        caregiver_baseline = _clamp_utility(get_qaly_by_age_and_sex(age, sex, config))
+        caregiver_weight = caregiver_utility - caregiver_baseline
 
     costs = config['costs'].get(stage, {}).get(setting, {'nhs': 0.0, 'informal': 0.0})
 
-    dt = config['time_step_years']
-    r = float(config.get('discount_rate_annual', 0.0))
-    # End-of-cycle discount factor for this period
-    disc_factor = 1.0 / ((1.0 + r) ** (time_step * dt))
+    disc_factor = _discount_factor(time_step, config)
 
     # This cycle's (undiscounted) flows
-    q_patient = patient_weight * dt
-    q_caregiver = caregiver_weight * dt
-    c_nhs = costs['nhs'] * dt
-    c_informal = costs['informal'] * dt
+    q_patient = patient_weight * cycle_time_alive
+    q_caregiver = caregiver_weight * cycle_time_alive
+    c_nhs = costs['nhs'] * cycle_time_alive
+    c_informal = costs['informal'] * cycle_time_alive
 
     # Add discounted flows
     individual_data['cumulative_qalys_patient'] += q_patient * disc_factor
@@ -1930,9 +1947,14 @@ def apply_stage_accumulations(individual_data: dict, config: dict, time_step: in
     individual_data['cumulative_costs_nhs'] += c_nhs * disc_factor
     individual_data['cumulative_costs_informal'] += c_informal * disc_factor
 
+    # Clear per-cycle accrual helpers so dead individuals do not repeatedly accrue in later cycles.
+    for key in ('_cycle_time_alive', '_cycle_stage_for_accrual', '_cycle_setting_for_accrual'):
+        if key in individual_data:
+            individual_data.pop(key, None)
+
 # Progression with mortality
 
-def update_dementia_progression(population_state: Dict[int, dict],
+def update_dementia_progression_optimized(population_state: Dict[int, dict],
                                 config: dict,
                                 time_step: int,
                                 death_age_counter: Counter,
@@ -1941,8 +1963,18 @@ def update_dementia_progression(population_state: Dict[int, dict],
                                 age_band_onsets: Optional[Dict[Tuple[int, Optional[int]], int]] = None,
                                 age_band_exposure_by_sex: Optional[Dict[str, Dict[Tuple[int, Optional[int]], float]]] = None,
                                 age_band_onsets_by_sex: Optional[Dict[str, Dict[Tuple[int, Optional[int]], int]]] = None
-                                ) -> Tuple[int, int, Dict[Tuple[str, str], int], Dict[str, int]]:
-    """Advance dementia stages and apply background/dementia mortality using hazards."""
+                                ) -> Tuple[int, int, Dict[Tuple[str, str], int], Dict[str, int], Dict[str, Dict[Tuple[int, Optional[int]], int]], Dict[str, Dict[Tuple[int, Optional[int]], int]]]:
+    """
+    OPTIMIZED: Advance dementia stages, apply mortality, update living settings,
+    accumulate QALYs/costs, and count age bands - all in a single loop.
+
+    This merges the functionality of:
+    - update_dementia_progression()
+    - update_stage_accumulations()
+    - age band counting loop
+
+    Returns: deaths, onsets, transition_counts, stage_start_counts, alive_counts_by_sex_band, prevalent_counts_by_sex_band
+    """
     dt = config['time_step_years']
     base_year = int(config.get('base_year', 2023))
     calendar_year = base_year + time_step
@@ -1958,9 +1990,19 @@ def update_dementia_progression(population_state: Dict[int, dict],
     onsets_this_step = 0
     transition_counter: Counter = Counter()
     stage_start_counts: Counter = Counter()
+
+    # Initialize age band tracking dictionaries
+    alive_counts_by_sex_band: Dict[str, Dict[Tuple[int, Optional[int]], int]] = {}
+    prevalent_counts_by_sex_band: Dict[str, Dict[Tuple[int, Optional[int]], int]] = {}
+
     for person in population_state.values():
         if not person['alive']:
             continue
+
+        # Per-cycle accrual helpers (used to ensure partial accrual in cycles where death occurs).
+        person.pop('_cycle_time_alive', None)
+        person.pop('_cycle_stage_for_accrual', None)
+        person.pop('_cycle_setting_for_accrual', None)
 
         stage = person['dementia_stage']
         stage_start_counts[stage] += 1
@@ -2002,17 +2044,32 @@ def update_dementia_progression(population_state: Dict[int, dict],
             h_total = h_bg
 
         p_death = hazard_to_prob(h_total, dt=dt)
-        if random.random() < p_death:
+        u_death = random.random()
+        died_this_cycle = False
+        if u_death < p_death:
+            # Time alive within-cycle under a constant hazard, conditional on death in (0, dt].
+            # With u_death < 1 - exp(-h_total*dt), t = -ln(1-u_death)/h_total lies in (0, dt].
+            time_alive = dt
+            if h_total > 0.0:
+                try:
+                    time_alive = -math.log(1.0 - u_death) / h_total
+                except (ValueError, ZeroDivisionError, OverflowError):
+                    time_alive = dt * 0.5
+            time_alive = max(0.0, min(dt, float(time_alive)))
+            person['_cycle_time_alive'] = time_alive
+            person['_cycle_stage_for_accrual'] = stage
+            person['_cycle_setting_for_accrual'] = person.get('living_setting')
             person['dementia_stage'] = 'death'
             person['alive'] = False
             person['living_setting'] = None
             death_age_counter[int(round(person['age']))] += 1
             deaths_this_step += 1
             transition_counter[(stage, 'death')] += 1
-            continue  # skip progression if death occurs
+            died_this_cycle = True
+            # OPTIMIZATION: Don't continue - need to do accumulations below
 
         # --- If still alive, apply stage progression (non-death transitions) ---
-        if stage == 'cognitively_normal':
+        if not died_this_cycle and stage == 'cognitively_normal':
             # Onset: either duration-driven (if provided) or base probability converted to hazard
             if 'normal_to_mild' in config['stage_transition_durations']:
                 p = transition_prob_from_config(config, person, 'normal_to_mild')
@@ -2054,28 +2111,68 @@ def update_dementia_progression(population_state: Dict[int, dict],
                     onset_by_band = age_band_onsets_by_sex.setdefault(sex_bucket, {})
                     onset_by_band[incidence_band] = onset_by_band.get(incidence_band, 0) + 1
 
-        elif stage == 'mild':
+        elif not died_this_cycle and stage == 'mild':
             p = transition_prob_from_config(config, person, 'mild_to_moderate')
             if random.random() < p:
                 person['dementia_stage'] = 'moderate'
                 person['time_in_stage'] = 0
 
-        elif stage == 'moderate':
+        elif not died_this_cycle and stage == 'moderate':
             p = transition_prob_from_config(config, person, 'moderate_to_severe')
             if random.random() < p:
                 person['dementia_stage'] = 'severe'
                 person['time_in_stage'] = 0
 
-        elif stage == 'severe':
+        elif not died_this_cycle and stage == 'severe':
             # death handled above; no non-death transition
             pass
 
-        else:
-            continue
-        end_stage = person['dementia_stage']
-        transition_counter[(stage, end_stage)] += 1
+        # Track transitions (already tracked for death above)
+        if not died_this_cycle:
+            end_stage = person['dementia_stage']
+            transition_counter[(stage, end_stage)] += 1
 
-    return deaths_this_step, onsets_this_step, dict(transition_counter), dict(stage_start_counts)
+        # OPTIMIZATION: Merge living setting update and accumulations into same loop
+        # (formerly done in separate update_stage_accumulations call)
+        update_living_setting(person, config)
+        apply_stage_accumulations(person, config, time_step)
+
+        # OPTIMIZATION: Count alive/prevalent by age band in same loop
+        # (formerly done in separate loop at lines 2511-2522)
+        if person.get('alive', False):
+            band = assign_age_to_reporting_band(person.get('age', 0.0), INCIDENCE_AGE_BANDS)
+            if band is not None:
+                sex_key = person.get('sex', 'unspecified')
+                alive_bucket = alive_counts_by_sex_band.setdefault(sex_key, {})
+                alive_bucket[band] = alive_bucket.get(band, 0) + 1
+                if person.get('dementia_stage') in ('mild', 'moderate', 'severe'):
+                    prevalent_bucket = prevalent_counts_by_sex_band.setdefault(sex_key, {})
+                    prevalent_bucket[band] = prevalent_bucket.get(band, 0) + 1
+
+    return deaths_this_step, onsets_this_step, dict(transition_counter), dict(stage_start_counts), alive_counts_by_sex_band, prevalent_counts_by_sex_band
+
+
+# Backward-compatible wrapper for original function signature
+def update_dementia_progression(population_state: Dict[int, dict],
+                                config: dict,
+                                time_step: int,
+                                death_age_counter: Counter,
+                                onset_tracker: Optional[Dict[str, Dict[str, int]]] = None,
+                                age_band_exposure: Optional[Dict[Tuple[int, Optional[int]], float]] = None,
+                                age_band_onsets: Optional[Dict[Tuple[int, Optional[int]], int]] = None,
+                                age_band_exposure_by_sex: Optional[Dict[str, Dict[Tuple[int, Optional[int]], float]]] = None,
+                                age_band_onsets_by_sex: Optional[Dict[str, Dict[Tuple[int, Optional[int]], int]]] = None
+                                ) -> Tuple[int, int, Dict[Tuple[str, str], int], Dict[str, int]]:
+    """
+    BACKWARD-COMPATIBLE WRAPPER: Calls optimized version but returns only the original return values.
+    Use update_dementia_progression_optimized() for the full optimized version.
+    """
+    deaths, onsets, trans, stage_starts, _, _ = update_dementia_progression_optimized(
+        population_state, config, time_step, death_age_counter, onset_tracker,
+        age_band_exposure, age_band_onsets, age_band_exposure_by_sex, age_band_onsets_by_sex
+    )
+    return deaths, onsets, trans, stage_starts
+
 
 # Living setting transitions
 
@@ -2140,7 +2237,8 @@ def summarize_population_state(population_state: Dict[int, dict],
                                base_year: int,
                                entrants: int = 0,
                                deaths: int = 0,
-                               new_onsets: int = 0) -> dict:
+                               new_onsets: int = 0,
+                               config: Optional[dict] = None) -> dict:
     """Aggregate key metrics for the current time step."""
     stage_counter = Counter()
     living_counter = Counter()
@@ -2156,6 +2254,14 @@ def summarize_population_state(population_state: Dict[int, dict],
     total_costs_nhs = 0.0
     total_costs_informal = 0.0
 
+    risk_counts_alive: Dict[str, int] = {}
+    risk_counts_dementia: Dict[str, int] = {}
+    risk_factor_names: List[str] = []
+    if isinstance(config, dict):
+        risk_factor_names = sorted((config.get('risk_factors') or {}).keys())
+        risk_counts_alive = {name: 0 for name in risk_factor_names}
+        risk_counts_dementia = {name: 0 for name in risk_factor_names}
+
     for person in population_state.values():
         stage = person['dementia_stage']
         stage_counter[stage] += 1
@@ -2168,7 +2274,8 @@ def summarize_population_state(population_state: Dict[int, dict],
             alive_count += 1
             age_alive_sum += person['age']
             living_counter[person.get('living_setting', 'unknown')] += 1
-            if stage in ('mild', 'moderate', 'severe'):
+            has_dementia = stage in ('mild', 'moderate', 'severe')
+            if has_dementia:
                 dementia_age_sum += person['age']
                 dementia_count += 1
                 band = assign_age_to_reporting_band(person['age'])
@@ -2176,6 +2283,14 @@ def summarize_population_state(population_state: Dict[int, dict],
                     age_band_dementia_counter[band] += 1
             if person.get('entry_time_step', 0) == 0:
                 baseline_alive_count += 1
+
+            if risk_factor_names:
+                flags = person.get('risk_factors') or {}
+                for risk_name in risk_factor_names:
+                    if bool(flags.get(risk_name, False)):
+                        risk_counts_alive[risk_name] += 1
+                        if has_dementia:
+                            risk_counts_dementia[risk_name] += 1
 
     mean_age_alive = age_alive_sum / alive_count if alive_count else 0.0
     mean_age_dementia = dementia_age_sum / dementia_count if dementia_count else 0.0
@@ -2192,8 +2307,13 @@ def summarize_population_state(population_state: Dict[int, dict],
         'incidence_per_1000_alive': (new_onsets / alive_count * 1000.0) if alive_count else 0.0,
         'total_qalys_patient': total_qalys_patient,
         'total_qalys_caregiver': total_qalys_caregiver,
+        'total_qalys_total': total_qalys_patient + total_qalys_caregiver,
         'total_costs_nhs': total_costs_nhs,
         'total_costs_informal': total_costs_informal,
+        'total_costs_nhs_perspective': total_costs_nhs,
+        'total_costs_societal': total_costs_nhs + total_costs_informal,
+        'dementia_cases_total': dementia_count,
+        'dementia_prevalence_alive': (dementia_count / alive_count) if alive_count else 0.0,
         'mean_age_alive': mean_age_alive,
         'mean_age_dementia': mean_age_dementia,
     }
@@ -2207,6 +2327,13 @@ def summarize_population_state(population_state: Dict[int, dict],
 
     for band in REPORTING_AGE_BANDS:
         summary[f'ad_cases_age_{age_band_key(band)}'] = age_band_dementia_counter.get(band, 0)
+
+    if risk_factor_names:
+        for risk_name in risk_factor_names:
+            exposed_alive = int(risk_counts_alive.get(risk_name, 0) or 0)
+            exposed_dementia = int(risk_counts_dementia.get(risk_name, 0) or 0)
+            summary[f'risk_prev_alive_{risk_name}'] = (exposed_alive / alive_count) if alive_count else 0.0
+            summary[f'risk_prev_dementia_{risk_name}'] = (exposed_dementia / dementia_count) if dementia_count else 0.0
 
     return summary
 
@@ -2333,7 +2460,7 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
     incidence_age_exposure: Dict[Tuple[int, Optional[int]], float] = defaultdict(float)
     incidence_age_onsets: Dict[Tuple[int, Optional[int]], int] = defaultdict(int)
 
-    baseline_summary = summarize_population_state(population_state, 0, base_year, entrants=0, deaths=0)
+    baseline_summary = summarize_population_state(population_state, 0, base_year, entrants=0, deaths=0, config=config)
     baseline_overrides = config.get('initial_summary_overrides') or {}
     if baseline_overrides:
         baseline_summary.update(baseline_overrides)
@@ -2352,6 +2479,14 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
         if 'time_step' in baseline_overrides:
             baseline_summary['time_step'] = baseline_overrides['time_step']
 
+    # Year-on-year (per-cycle) flows are defined as differences in cumulative discounted totals.
+    baseline_summary.setdefault('year_qalys_patient', 0.0)
+    baseline_summary.setdefault('year_qalys_caregiver', 0.0)
+    baseline_summary.setdefault('year_qalys_total', 0.0)
+    baseline_summary.setdefault('year_costs_nhs', 0.0)
+    baseline_summary.setdefault('year_costs_informal', 0.0)
+    baseline_summary.setdefault('year_costs_societal', 0.0)
+
     create_time_step_dictionary(summary_history, 0, baseline_summary)
     generate_output(summary_history, 0)
 
@@ -2365,7 +2500,9 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
         next_id, entrants_this_step = add_new_entrants(population_state, config, next_id, calendar_year)
         per_sex_exposure: Dict[str, Dict[Tuple[int, Optional[int]], float]] = {}
         per_sex_onsets: Dict[str, Dict[Tuple[int, Optional[int]], int]] = {}
-        deaths_this_step, onsets_this_step, transition_counts, stage_start_counts = update_dementia_progression(
+
+        # OPTIMIZATION: Use combined function that merges progression + accumulations + counting
+        deaths_this_step, onsets_this_step, transition_counts, stage_start_counts, alive_counts_by_sex_band, prevalent_counts_by_sex_band = update_dementia_progression_optimized(
             population_state,
             config,
             time_step,
@@ -2376,22 +2513,8 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
             per_sex_exposure,
             per_sex_onsets
         )
-        update_stage_accumulations(population_state, time_step, config)
-
-        alive_counts_by_sex_band: Dict[str, Dict[Tuple[int, Optional[int]], int]] = {}
-        prevalent_counts_by_sex_band: Dict[str, Dict[Tuple[int, Optional[int]], int]] = {}
-        for person in population_state.values():
-            if not person.get('alive', False):
-                continue
-            band = assign_age_to_reporting_band(float(person.get('age', 0.0)), INCIDENCE_AGE_BANDS)
-            if band is None:
-                continue
-            sex_key = person.get('sex', 'unspecified')
-            alive_bucket = alive_counts_by_sex_band.setdefault(sex_key, {})
-            alive_bucket[band] = alive_bucket.get(band, 0) + 1
-            if person.get('dementia_stage') in ('mild', 'moderate', 'severe'):
-                prevalent_bucket = prevalent_counts_by_sex_band.setdefault(sex_key, {})
-                prevalent_bucket[band] = prevalent_bucket.get(band, 0) + 1
+        # OPTIMIZATION: Removed separate update_stage_accumulations() call - now done in combined loop above
+        # OPTIMIZATION: Removed separate age band counting loop - now done in combined loop above
 
         sexes_present = (
             set(per_sex_exposure.keys())
@@ -2468,7 +2591,17 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
                                              base_year,
                                              entrants=entrants_this_step,
                                              deaths=deaths_this_step,
-                                             new_onsets=onsets_this_step)
+                                             new_onsets=onsets_this_step,
+                                             config=config)
+
+        prev = summary_history.get(time_step - 1, {}) or {}
+        summary['year_qalys_patient'] = float(summary.get('total_qalys_patient', 0.0) or 0.0) - float(prev.get('total_qalys_patient', 0.0) or 0.0)
+        summary['year_qalys_caregiver'] = float(summary.get('total_qalys_caregiver', 0.0) or 0.0) - float(prev.get('total_qalys_caregiver', 0.0) or 0.0)
+        summary['year_qalys_total'] = summary['year_qalys_patient'] + summary['year_qalys_caregiver']
+        summary['year_costs_nhs'] = float(summary.get('total_costs_nhs', 0.0) or 0.0) - float(prev.get('total_costs_nhs', 0.0) or 0.0)
+        summary['year_costs_informal'] = float(summary.get('total_costs_informal', 0.0) or 0.0) - float(prev.get('total_costs_informal', 0.0) or 0.0)
+        summary['year_costs_societal'] = float(summary.get('total_costs_societal', 0.0) or 0.0) - float(prev.get('total_costs_societal', 0.0) or 0.0)
+
         create_time_step_dictionary(summary_history, time_step, summary)
         generate_output(summary_history, time_step)
 
@@ -2568,6 +2701,10 @@ def run_model(config: dict, seed: Optional[int] = None) -> dict:
     if not incidence_by_year_sex_df.empty:
         incidence_by_year_sex_df.sort_values(['calendar_year', 'sex', 'age_lower'], inplace=True)
         incidence_by_year_sex_df.reset_index(drop=True, inplace=True)
+        denom = incidence_by_year_sex_df['population_alive_in_band'].replace(0, np.nan)
+        incidence_by_year_sex_df['dementia_prevalence_in_band'] = (
+            incidence_by_year_sex_df['prevalent_dementia_cases_in_band'] / denom
+        ).fillna(0.0)
 
     onset_age_counter: Counter = Counter()
     for person in population_state.values():
@@ -2717,7 +2854,7 @@ def apply_psa_draw(base_config: dict,
     if isinstance(costs_cfg, dict):
         _sample_cost_structure(costs_cfg, rel_gamma, rng)
 
-    for key in ('utility_norms_by_age', 'utility_multipliers', 'stage_age_qalys', 'dementia_stage_qalys'):
+    for key in ('utility_norms_by_age', 'stage_age_qalys', 'dementia_stage_qalys'):
         mapping = cfg.get(key)
         if isinstance(mapping, dict):
             _apply_beta_to_mapping(mapping, rel_beta, rng)
@@ -4376,6 +4513,27 @@ def export_results_to_excel(model_results, path="PD_AD_PD50.xlsx"):
     with pd.ExcelWriter(path) as writer:
         summaries.to_excel(writer, sheet_name="Summary", index=False)
 
+        flow_cols = [
+            'time_step',
+            'calendar_year',
+            'year_qalys_patient',
+            'year_qalys_caregiver',
+            'year_qalys_total',
+            'year_costs_nhs',
+            'year_costs_informal',
+            'year_costs_societal',
+        ]
+        if set(['time_step', 'calendar_year']).issubset(summaries.columns):
+            existing_flow_cols = [c for c in flow_cols if c in summaries.columns]
+            if len(existing_flow_cols) >= 3:
+                flows_df = summaries[existing_flow_cols].copy().sort_values('time_step')
+                flows_df.to_excel(writer, sheet_name="YearlyFlows", index=False)
+
+        risk_cols = [c for c in summaries.columns if str(c).startswith('risk_prev_')]
+        if risk_cols and set(['time_step', 'calendar_year']).issubset(summaries.columns):
+            risk_df = summaries[['time_step', 'calendar_year', *risk_cols]].copy().sort_values('time_step')
+            risk_df.to_excel(writer, sheet_name="RiskFactorPrevalence", index=False)
+
         target_years = [2025, 2030, 2035, 2040]
         severity_columns = [col for col in ('stage_mild', 'stage_moderate', 'stage_severe') if col in summaries.columns]
         if severity_columns and 'calendar_year' in summaries.columns:
@@ -4415,6 +4573,19 @@ def export_results_to_excel(model_results, path="PD_AD_PD50.xlsx"):
         incidence_by_year_sex_df = model_results.get('incidence_by_year_sex_df')
         if isinstance(incidence_by_year_sex_df, pd.DataFrame) and not incidence_by_year_sex_df.empty:
             incidence_by_year_sex_df.to_excel(writer, sheet_name="IncidenceByYearSex", index=False)
+            prevalence_cols = [
+                'time_step',
+                'calendar_year',
+                'sex',
+                'age_band',
+                'population_alive_in_band',
+                'prevalent_dementia_cases_in_band',
+                'dementia_prevalence_in_band',
+            ]
+            existing_prev_cols = [c for c in prevalence_cols if c in incidence_by_year_sex_df.columns]
+            if len(existing_prev_cols) >= 6:
+                prevalence_df = incidence_by_year_sex_df[existing_prev_cols].copy()
+                prevalence_df.to_excel(writer, sheet_name="PrevalenceByAgeSex", index=False)
 
         mean_age_cols = ['time_step', 'calendar_year', 'mean_age_alive', 'mean_age_dementia']
         if set(mean_age_cols).issubset(summaries.columns):
@@ -4755,4 +4926,3 @@ if __name__ == "__main__":
 
     if os.environ.get("RUN_CALIBRATION_PLOTS", "0") == "1":
         run_calibration_prevalence_plots()
-
