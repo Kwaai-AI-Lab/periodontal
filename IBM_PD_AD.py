@@ -260,7 +260,7 @@ def _sample_risk_factor_relative_risks(risk_defs: Dict[str, dict],
 general_config = {
     'number_of_timesteps': 17,
     'population': 33167098,
-         
+
     'time_step_years': 1,
 
      #(VERIFIED, ONS) # Anchor baseline stage mix ---
@@ -325,7 +325,7 @@ general_config = {
 
     # Probabilistic sensitivity analysis configuration (sampling specs defined below)
     'psa': {
-        'use': False,
+        'use': True,
         'two_level_only': False,      # if True, skip full-population PSA and only run two-level ANOVA PSA
         'iterations': 1000,
         'seed': 20231113,
@@ -373,7 +373,7 @@ general_config = {
         },
     },
 
-    # (VERIFIED, ONS)  #  Sex mix used when initialising the cohort 
+    # (VERIFIED, ONS)  #  Sex mix used when initialising the cohort
     'sex_distribution': {
         'female': 0.52,
         'male': 0.48,
@@ -397,7 +397,7 @@ general_config = {
         'reference_year': 2023,
     },
 
-    ## (VERIFIED, Tariot et al(2024)) # Mean durations (years) => baseline hazards = 1/duration under exponential assumption 
+    ## (VERIFIED, Tariot et al(2024)) # Mean durations (years) => baseline hazards = 1/duration under exponential assumption
     'stage_transition_durations': {
         # 'normal_to_mild': 6,
         'mild_to_moderate': 2.2,
@@ -405,7 +405,7 @@ general_config = {
         'severe_to_death': 4,
     },
 
-    # (VERIFIED, ONS) # Background mortality (annual absolute hazards by age band; replace with ONS by converting annual probability to hazard h = -ln(1-prob)) 
+    # (VERIFIED, ONS) # Background mortality (annual absolute hazards by age band; replace with ONS by converting annual probability to hazard h = -ln(1-prob))
     'background_mortality_hazards': {
         'female': {
             35: 0.000631199,
@@ -547,7 +547,7 @@ general_config = {
 
     # (VERIFIED, Crowell et al. 2023) # Dementia severity multipliers on background mortality hazard
     'dementia_mortality_multipliers': {
-        'cognitively_normal': 1.0,   
+        'cognitively_normal': 1.0,
         'mild': 1.0,          #(1.49-2.91)
         'moderate': 1.0,      #(1.94-3.35)
         'severe': 1.0,        #(4.36-8.80)  ###
@@ -582,8 +582,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.50,
-                'male': 0.50,
+                'female': 0.25,
+                'male': 0.25,
             },
             'relative_risks': {
                 'onset': {
@@ -747,7 +747,7 @@ general_config = {
         'use': True,      # flip to False to use banded HRs above
         'ref_age': 70,    # baseline age where HR(age)=1
         'betas': {        # per-year log-hazard slopes (increase) (tune to data/literature)
-            'onset': 0.06,     #(VERIFIED) 
+            'onset': 0.06,     #(VERIFIED)
             'mild_to_moderate': 0.030,   #(VERIFIED, Biondo et al., 2022 - 3% increase in hazard of dementia per year of age = beta = ln(1.03)=0.03)
             'moderate_to_severe': 0.015,    #(VERIFIED, a 10-year age difference gives only 16% higher hazard of progressing to severe, observe slower symptom progression in very old patients - 33% increase over a 10-year age gap corresponds to ln(1.33)/10 = 0.029, which is too high)
             'severe_to_death': 0.010,   #(VERIFIED, an 80-year old with severe dementia has only slightly higher dementia-specific death hazard than a 70-year old with severe dementia, additional mortality so don't need to use such a large effect)

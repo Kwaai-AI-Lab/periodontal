@@ -10,7 +10,7 @@ an efficient two-level nested design based on the principles described by O'Haga
 Each PSA iteration simulated 331,670 individuals (representing 1%
 of the target population), with all model parameters sampled simultaneously from their
 respective probability distributions (Table X). This approach reduces computational burden
-from an estimated 10-14 days to approximately 7.3 hours while maintaining
+from an estimated 10-14 days to approximately 9.9 hours while maintaining
 accuracy of 95% confidence intervals, as the CIs primarily reflect parameter uncertainty
 rather than Monte Carlo error.
 
@@ -40,7 +40,7 @@ KEY STATISTICS TO REPORT:
 - Population per iteration: 331,670 (1% of full population)
 - Scaling multiplier for counts: 100x
 - Computational efficiency: 100-fold reduction in runtime
-- Actual runtime: 7.32 hours
+- Actual runtime: 9.86 hours
 - Random seed: 42 (for reproducibility)
 - Validation: All rates remained constant after scaling
 
