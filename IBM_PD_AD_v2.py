@@ -30,20 +30,12 @@ except ImportError:
 # General configuration
 
 REPORTING_AGE_BANDS: List[Tuple[int, Optional[int]]] = [
-    (35, 49),
-    (50, 64),
     (65, 79),
     (80, None),
 ]
 
 # Hazard reporting age bands for incidence outputs (inclusive upper bounds)
 INCIDENCE_AGE_BANDS: List[Tuple[int, Optional[int]]] = [
-    (0, 39),
-    (40, 44),
-    (45, 49),
-    (50, 54),
-    (55, 59),
-    (60, 64),
     (65, 69),
     (70, 74),
     (75, 79),
@@ -259,7 +251,7 @@ def _sample_risk_factor_relative_risks(risk_defs: Dict[str, dict],
 
 general_config = {
     'number_of_timesteps': 17,
-    'population': 33167098,
+    'population': 10787479,  # 65+ population only
 
     'time_step_years': 1,
 
@@ -268,19 +260,18 @@ general_config = {
 
     "open_population": {
         "use": True,                 # set True to enable new entrants
-        "entrants_per_year": 800000,
+        "entrants_per_year": 600000,  # 65+ entrants only
         "entrants_growth": {
             "use": True,
             # Annualized growth from +13.17% over 2019-2040[Data from ONS], applied from 2023 onward.
             "annual_rate": 0.0059088616,
             "reference_year": 2023,
         },
-        "fixed_entry_age": None,     # allow age distribution to evolve over time
+        "fixed_entry_age": 65,     # all entrants enter at age 65
         # entrant age-bands scale relative to baseline weights by milestone year
+        # Note: Not used since fixed_entry_age=65, but kept for compatibility
         "age_band_multiplier_schedule": {
             2025: {
-                (35, 49): 1.03,
-                (50, 64): 1.00,
                 (65, 69): 1.05,
                 (70, 74): 0.99,
                 (75, 79): 1.03,
@@ -288,8 +279,6 @@ general_config = {
                 (85, 100): 1.04,
             },
             2030: {
-                (35, 49): 1.10,
-                (50, 64): 0.97,
                 (65, 69): 1.21,
                 (70, 74): 1.09,
                 (75, 79): 0.95,
@@ -297,8 +286,6 @@ general_config = {
                 (85, 100): 1.21,
             },
             2035: {
-                (35, 49): 1.14,
-                (50, 64): 0.97,
                 (65, 69): 1.23,
                 (70, 74): 1.26,
                 (75, 79): 1.06,
@@ -306,8 +293,6 @@ general_config = {
                 (85, 100): 1.52,
             },
             2040: {
-                (35, 49): 1.15,
-                (50, 64): 1.01,
                 (65, 69): 1.16,
                 (70, 74): 1.29,
                 (75, 79): 1.23,
@@ -355,21 +340,14 @@ general_config = {
         },
     },
     'initial_dementia_prevalence_by_age_band': {
-        (35, 49): {
-            'female': 0.000122881250,
-            'male': 0.000359039314,
-        },
-        (50, 64): {
-            'female': 0.001724867141,
-            'male': 0.001960687970,
-        },
+        # Scaled to achieve ~800k prevalent cases in 65+ population (10,787,479)
         (65, 79): {
-            'female': 0.025045935225,
-            'male': 0.023442322769,
+            'female': 0.031152,  # scaled from 0.025046 by factor 1.244
+            'male': 0.029153,    # scaled from 0.023442 by factor 1.244
         },
         (80, 100): {
-            'female': 0.177376040863,
-            'male': 0.128446668155,
+            'female': 0.220598,  # scaled from 0.177376 by factor 1.244
+            'male': 0.159755,    # scaled from 0.128447 by factor 1.244
         },
     },
 
@@ -380,11 +358,10 @@ general_config = {
     },
 
     # (VERIFIED, ONS)  #  Example: band weights (uniform draw within each band)
+    # Renormalized for 65+ only: 0.24/(0.24+0.09) = 0.7273, 0.09/(0.24+0.09) = 0.2727
     'initial_age_band_weights': {
-        (35, 49): 0.34,
-        (50, 64): 0.34,
-        (65, 79): 0.24,
-        (80, 100): 0.09,
+        (65, 79): 0.7273,
+        (80, 100): 0.2727,
     },
 
     # #(VERIFED, NHS England)  #   Baseline annual probability of onset if no duration is provided for normal->mild
@@ -393,7 +370,7 @@ general_config = {
     # Optional macro incidence growth (compounds onset hazard per calendar year)
     'incidence_growth': {
         'use': True,
-        'annual_rate': 0.02,
+        'annual_rate': 0.0,  # Set to 0 (no growth)
         'reference_year': 2023,
     },
 
@@ -575,8 +552,8 @@ general_config = {
                     'male': 1.00,
                 },
                 'severe_to_death': {
-                    'female': 1.75,         #(VERIFIED, LITERATURE)
-                    'male': 1.75,          #(VERIFIED, LITERATURE)
+                    'female': 1.00,         # Set to 1.00 (no effect)
+                    'male': 1.00,          # Set to 1.00 (no effect)
                 },
             },
         },
@@ -599,8 +576,8 @@ general_config = {
                     'male': 1.00,
                 },
                 'severe_to_death': {
-                    'female': 1.36,      #(VERIFIED, LITERATURE)
-                    'male': 1.36,        #(VERIFIED, LITERATURE)
+                    'female': 1.00,      # Set to 1.00 (no effect)
+                    'male': 1.00,        # Set to 1.00 (no effect)
                 },
             },
         },
@@ -623,8 +600,8 @@ general_config = {
                     'male': 1.00,
                 },
                 'severe_to_death': {
-                    'female': 1.18,      #(VERIFIED, LITERATURE)
-                    'male': 1.18,        #(VERIFIED, LITERATURE)
+                    'female': 1.00,      # Set to 1.00 (no effect)
+                    'male': 1.00,        # Set to 1.00 (no effect)
                 },
             },
         },
@@ -647,8 +624,8 @@ general_config = {
                     'male': 1.00,
                 },
                 'severe_to_death': {
-                    'female': 1.34,    #(VERIFIED, LITERATURE)
-                    'male': 1.34,     #(VERIFIED, LITERATURE)
+                    'female': 1.00,    # Set to 1.00 (no effect)
+                    'male': 1.00,     # Set to 1.00 (no effect)
                 },
             },
         },
@@ -671,8 +648,8 @@ general_config = {
                     'male': 1.00,
                 },
                 'severe_to_death': {
-                    'female': 1.79,  #(VERIFIED, LITERATURE)
-                    'male': 1.79,   #(VERIFIED, LITERATURE)
+                    'female': 1.00,  # Set to 1.00 (no effect)
+                    'male': 1.00,   # Set to 1.00 (no effect)
                 },
             },
         },
@@ -680,62 +657,52 @@ general_config = {
 
     # Living setting transitions (per-cycle probabilities; one-directional per current setting, fair assumption given nature of disease)
     # keyed by stage, then by (lower_age_inclusive, upper_age_inclusive_or_None) band  (VERIFIED, OHE)
+    # 65+ only model - removed (35, 65) age band
     'living_setting_transition_probabilities': {
         'mild': {
-            (35, 65): {'to_institution': 0.0087, 'to_home': 0.469},
             (65, None): {'to_institution': 0.066, 'to_home': 0.105},
         },
         'moderate': {
-            (35, 65): {'to_institution': 0.055, 'to_home': 0.28},
             (65, None): {'to_institution': 0.143, 'to_home': 0.225},
         },
         'severe': {
-            (35, 65): {'to_institution': 0.117, 'to_home': 0.094},
             (65, None): {'to_institution': 0.179, 'to_home': 0.282},
         },
     },
 
     # Utility norms by age band (baseline utilities, EQ-5D) split by sex
+    # 65+ only model - removed ages below 65
     'utility_norms_by_age': {
         'female': {
-            35: 0.91,
-            45: 0.85,
-            55: 0.81,
             65: 0.78,
             75: 0.71,
         },
         'male': {
-            35: 0.91,
-            45: 0.84,
-            55: 0.78,
             65: 0.78,
             75: 0.75,
         },
     },
 
-    # OFF ## Age hazard ratios (multipliers) for each transition (banded; fallback if parametric off), will need to update with younger multipliers if I turn off Cox-style poarametric age effects
+    # OFF ## Age hazard ratios (multipliers) for each transition (banded; fallback if parametric off)
+    # 65+ only model - removed age 60 reference
     'age_risk_multipliers': {
         'onset': {
-            60: 0.8,
             65: 1.0,  # reference
             70: 1.2,
             75: 1.5,
             80: 1.8,
         },
         'mild_to_moderate': {
-            60: 0.8,
             65: 1.0,
             75: 1.2,
             80: 1.35,
         },
         'moderate_to_severe': {
-            60: 0.8,
             65: 1.0,
             75: 1.15,
             80: 1.3,
         },
         'severe_to_death': {
-            60: 0.8,
             65: 1.0,
             75: 1.1,
             80: 1.2,
@@ -814,8 +781,8 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
             'male': (1.47, 1.32, 1.65),
         },
         'severe_to_death': {
-            'female': (1.36, 1.10, 1.69),
-            'male': (1.36, 1.10, 1.69),
+            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
+            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
         },
     },
     'smoking': {
@@ -824,8 +791,8 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
             'male': (1.34, 1.19, 1.51),
         },
         'severe_to_death': {
-            'female': (1.75, 1.33, 2.29),
-            'male': (1.75, 1.33, 2.29),
+            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
+            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
         },
     },
     'cerebrovascular_disease': {
@@ -834,8 +801,8 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
             'male': (2.24, 1.86, 2.71),
         },
         'severe_to_death': {
-            'female': (1.18, 1.12, 1.25),
-            'male': (1.18, 1.12, 1.25),
+            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
+            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
         },
     },
     'CVD_disease': {
@@ -844,8 +811,8 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
             'male': (2.14, 1.85, 2.47),
         },
         'severe_to_death': {
-            'female': (1.34, 1.05, 1.71),
-            'male': (1.34, 1.05, 1.71),
+            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
+            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
         },
     },
     'diabetes': {
@@ -854,8 +821,8 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
             'male': (1.48, 1.02, 2.15),
         },
         'severe_to_death': {
-            'female': (1.79, 1.56, 2.06),
-            'male': (1.79, 1.56, 2.06),
+            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
+            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
         },
     },
 }
@@ -1908,15 +1875,19 @@ def apply_stage_accumulations(individual_data: dict, config: dict, time_step: in
     age = individual_data['age']
 
     # Patient utility (absolute, clamped to [0, 1])
-    stage_age_qalys = config.get('stage_age_qalys')
-    patient_weight = get_stage_age_qaly('patient', stage, age, setting, stage_age_qalys)
-    if patient_weight is None:
-        patient_stage = get_dementia_stage_qaly(stage, sex, config)
-        if patient_stage is not None:
-            patient_weight = patient_stage
-        else:
-            patient_weight = get_qaly_by_age_and_sex(age, sex, config)
-    patient_weight = _clamp_utility(patient_weight)
+    # MODIFIED: Only accrue QALYs for people with dementia (not cognitively_normal)
+    if stage == 'cognitively_normal':
+        patient_weight = 0.0
+    else:
+        stage_age_qalys = config.get('stage_age_qalys')
+        patient_weight = get_stage_age_qaly('patient', stage, age, setting, stage_age_qalys)
+        if patient_weight is None:
+            patient_stage = get_dementia_stage_qaly(stage, sex, config)
+            if patient_stage is not None:
+                patient_weight = patient_stage
+            else:
+                patient_weight = get_qaly_by_age_and_sex(age, sex, config)
+        patient_weight = _clamp_utility(patient_weight)
 
     # Caregiver effect as incremental disutility (absolute utilities clamped; incremental may be negative).
     caregiver_weight: float = 0.0

@@ -1,14 +1,29 @@
 """
 External Validation Script for IBM Dementia Model
 Validates model predictions against observed 2024 prevalence data
+
+RECOMMENDED WORKFLOW:
+1. Run generate_validation_data.py ONCE to create 2024 results (uses full population)
+2. Run this script to load those results and perform validation
+
+This two-step approach allows you to:
+- Run the full population model once and save results
+- Quickly re-run validation with different parameters/plots
+- Avoid re-running the simulation every time
+
+The script uses pre-aggregated age-banded prevalence data from the model's
+'incidence_by_year_sex_df' output, which tracks prevalence by age band, sex,
+and year. This allows validation with R² and slope coefficients at the
+aggregated level.
 """
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-from IBM_PD_AD import run_model, general_config
+from IBM_PD_AD import run_model, general_config, save_results_compressed, load_results_compressed
 import copy
+import os
 
 
 # Observed prevalence data for 2024 (from surveillance data)
@@ -25,85 +40,121 @@ OBSERVED_DATA_2024 = [
 
 
 def run_model_to_2024(config, seed=42):
-    """Run model to 2024 and return results"""
-    print("Running model to 2024...")
+    """
+    Run model to 2024 and return results
+
+    NOTE: This function runs with the FULL population from config.
+    For a less memory-intensive approach, first run generate_validation_data.py
+    to create cached results, then load them with the results_file parameter.
+
+    Parameters:
+    -----------
+    config : dict
+        Model configuration (uses population size as-is from config)
+    seed : int
+        Random seed for reproducibility
+    """
+    print(f"Running model to 2024...")
+    print(f"  Population: {config.get('population', 0):,}")
 
     # Create a copy of config to modify
     validation_config = copy.deepcopy(config)
 
-    # Ensure model runs to 2024
-    validation_config['end_year'] = 2024
+    # Ensure model runs to 2024 by calculating number of timesteps needed
+    base_year = int(validation_config.get('base_year', 2023))
+    target_year = 2024
+    timesteps_needed = target_year - base_year
+    validation_config['number_of_timesteps'] = timesteps_needed
 
-    # Run the model
-    results = run_model(validation_config, seed=seed)
+    print(f"  Running {timesteps_needed} timestep(s): {base_year} -> {target_year}")
 
-    print(f"Model run complete. End year: {validation_config['end_year']}")
+    # Run the model (same way IBM_PD_AD runs it)
+    results = run_model(validation_config, seed=seed, return_agents=False)
+
+    print(f"Model run complete. End year: {base_year + timesteps_needed}")
     return results
 
 
 def extract_prevalence_by_age_sex(results, year=2024):
     """
-    Extract prevalence from model results by age group and sex
+    Extract prevalence from model results by age group and sex using aggregated data
 
     Returns DataFrame with columns: age_lower, age_upper, sex, prevalence
+
+    NOTE: This function uses pre-aggregated data from incidence_by_year_sex_df,
+    avoiding the need to store individual agent data for 33+ million people.
+
+    The data is aggregated to match the observed age bands:
+    - 35-49, 50-64, 65-79, 80+
     """
     print(f"\nExtracting prevalence for year {year}...")
 
-    # Get the agents dataframe
-    agents = results['agents']
+    # Get the pre-aggregated incidence dataframe
+    incidence_df = results['incidence_by_year_sex_df']
 
-    # Filter to agents alive in the target year
-    alive_agents = agents[agents['year_of_death'] >= year].copy()
+    # Filter to target year and exclude 'all' sex category
+    year_data = incidence_df[
+        (incidence_df['calendar_year'] == year) &
+        (incidence_df['sex'].isin(['male', 'female']))
+    ].copy()
 
-    print(f"Total agents alive in {year}: {len(alive_agents)}")
+    if year_data.empty:
+        print(f"  Warning: No data found for year {year}")
+        return pd.DataFrame()
 
-    # Calculate age in target year
-    alive_agents['age_in_year'] = year - alive_agents['year_of_birth']
+    # Map sex from 'male'/'female' to 'M'/'F' for consistency
+    year_data['sex_code'] = year_data['sex'].map({'male': 'M', 'female': 'F'})
 
-    # Define age bands
-    age_bands = [
+    # Define target age bands matching observed data
+    target_bands = [
         (35, 49),
         (50, 64),
         (65, 79),
-        (80, None),
+        (80, None)  # 80+
     ]
 
     prevalence_data = []
 
-    for age_lower, age_upper in age_bands:
-        for sex in ['F', 'M']:
-            # Filter by age and sex
-            if age_upper is None:
-                age_mask = (alive_agents['age_in_year'] >= age_lower)
-                age_label = f"{age_lower}+"
+    for sex_code in ['F', 'M']:
+        sex_data = year_data[year_data['sex_code'] == sex_code]
+
+        for age_lower, age_upper in target_bands:
+            # Filter model bands whose age_lower falls within target range
+            # Note: age_upper in target bands is exclusive (e.g., 35-49 means 35 <= age < 50)
+            if age_upper is None:  # 80+ case
+                mask = (sex_data['age_lower'] >= age_lower)
             else:
-                age_mask = (alive_agents['age_in_year'] >= age_lower) & (alive_agents['age_in_year'] <= age_upper)
-                age_label = f"{age_lower}-{age_upper}"
+                # Include all bands that start within [age_lower, age_upper)
+                # For 35-49: include bands starting at 35,40,45 (NOT 50)
+                mask = (sex_data['age_lower'] >= age_lower) & (sex_data['age_lower'] < age_upper)
 
-            sex_mask = alive_agents['sex'] == sex
-            subset = alive_agents[age_mask & sex_mask]
+            band_data = sex_data[mask]
 
-            # Count total in age-sex group
-            n_total = len(subset)
+            if band_data.empty:
+                print(f"  Warning: No data for {age_lower}-{age_upper if age_upper else '+'} {sex_code}")
+                continue
 
-            if n_total == 0:
-                print(f"  Warning: No agents in {age_label}, {sex} group")
+            # Aggregate across the sub-bands
+            total_population = band_data['population_alive_in_band'].sum()
+            total_dementia = band_data['prevalent_dementia_cases_in_band'].sum()
+
+            if total_population > 0:
+                prevalence = total_dementia / total_population
+            else:
                 prevalence = 0.0
-            else:
-                # Count those with dementia (year_of_onset <= year and year_of_death >= year)
-                n_with_dementia = len(subset[subset['year_of_onset'] <= year])
-                prevalence = n_with_dementia / n_total
 
-                print(f"  {age_label:8s} {sex}: {n_with_dementia:6d}/{n_total:6d} = {prevalence:.6f}")
+            age_band_str = f"{age_lower}-{age_upper}" if age_upper else f"{age_lower}+"
+
+            print(f"  {age_band_str:8s} {sex_code}: {total_dementia:6d}/{total_population:6d} = {prevalence:.6f}")
 
             prevalence_data.append({
                 'age_lower': age_lower,
                 'age_upper': age_upper,
-                'sex': sex,
+                'sex': sex_code,
                 'prevalence': prevalence,
-                'age_band': age_label,
-                'n_total': n_total,
-                'n_with_dementia': n_with_dementia if n_total > 0 else 0
+                'age_band': age_band_str,
+                'n_total': int(total_population),
+                'n_with_dementia': int(total_dementia)
             })
 
     return pd.DataFrame(prevalence_data)
@@ -144,10 +195,17 @@ def create_calibration_plot(predicted_df, observed_df, sex, save_dir):
     obs_subset = observed_df[observed_df['sex'] == sex].copy()
 
     merged = merged.merge(
-        obs_subset[['age_lower', 'observed']],
-        on='age_lower',
-        how='left'
+        obs_subset[['age_lower', 'age_upper', 'observed']],
+        on=['age_lower', 'age_upper'],
+        how='inner'  # Use inner join to only keep matching rows
     )
+
+    # Remove any rows with missing values
+    merged = merged.dropna(subset=['prevalence', 'observed'])
+
+    if len(merged) < 2:
+        print(f"  Warning: Insufficient data points ({len(merged)}) for {sex} calibration")
+        return {'alpha': 0.0, 'beta': 0.0, 'r2': 0.0}
 
     # Fit OLS
     fit_stats = ols_fit(merged['prevalence'], merged['observed'])
@@ -238,16 +296,26 @@ def create_comparison_table(predicted_df, observed_df, save_dir):
     return comparison_display
 
 
-def run_external_validation(seed=42, save_dir=None):
+def run_external_validation(seed=42, save_dir=None, results_file=None, save_results=False):
     """
     Main function to run external validation
+
+    RECOMMENDED: Use results_file parameter to load pre-computed results from
+    generate_validation_data.py rather than running the model fresh.
 
     Parameters:
     -----------
     seed : int
-        Random seed for reproducibility
+        Random seed for reproducibility (only used if running model fresh)
     save_dir : Path or str
         Directory to save outputs (default: plots/)
+    results_file : Path or str, optional
+        Path to pre-computed model results (.pkl.gz file)
+        If provided, will load results instead of running model
+        If None, will run the model fresh with FULL population from general_config
+    save_results : bool
+        If True and running fresh, save model results to 'validation_results_2024.pkl.gz'
+        for future reuse (default: False - use generate_validation_data.py instead)
     """
     print("="*80)
     print("EXTERNAL VALIDATION - IBM DEMENTIA MODEL")
@@ -260,8 +328,25 @@ def run_external_validation(seed=42, save_dir=None):
         save_dir = Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Run model to 2024
-    results = run_model_to_2024(general_config, seed=seed)
+    # 1. Get model results (either load or run)
+    if results_file is not None and os.path.exists(results_file):
+        print(f"\nLoading pre-computed results from: {results_file}")
+        results = load_results_compressed(results_file)
+        print("Results loaded successfully!")
+    else:
+        if results_file is not None:
+            print(f"\nWarning: Results file not found: {results_file}")
+            print("Running model fresh instead...\n")
+
+        # Run model to 2024 with FULL population
+        results = run_model_to_2024(general_config, seed=seed)
+
+        # Save results for future reuse if requested
+        if save_results:
+            results_path = Path("validation_results_2024.pkl.gz")
+            print(f"\nSaving results to {results_path} for future reuse...")
+            save_results_compressed(results, results_path)
+            print(f"  To reuse: run_external_validation(results_file='{results_path}')")
 
     # 2. Extract predicted prevalence
     predicted_df = extract_prevalence_by_age_sex(results, year=2024)
@@ -290,9 +375,10 @@ def run_external_validation(seed=42, save_dir=None):
 
     for ax, sex, sex_label in [(ax1, 'F', 'Female'), (ax2, 'M', 'Male')]:
         merged = predicted_df[predicted_df['sex'] == sex].merge(
-            observed_df[observed_df['sex'] == sex][['age_lower', 'observed']],
-            on='age_lower'
-        )
+            observed_df[observed_df['sex'] == sex][['age_lower', 'age_upper', 'observed']],
+            on=['age_lower', 'age_upper'],
+            how='inner'
+        ).dropna(subset=['prevalence', 'observed'])
 
         stats = female_stats if sex == 'F' else male_stats
 
@@ -340,8 +426,21 @@ def run_external_validation(seed=42, save_dir=None):
 
 
 if __name__ == "__main__":
-    # Run validation
-    validation_results = run_external_validation(seed=42)
+    # RECOMMENDED WORKFLOW:
+    # Step 1: Run generate_validation_data.py ONCE to create 2024 results (full population)
+    # Step 2: Run this script to load results and perform validation
 
-    print("\n✓ External validation complete!")
+    # MODE 1: Load pre-computed results (RECOMMENDED - fast, uses full population)
+    # First run: python generate_validation_data.py
+    # Then uncomment the line below:
+    validation_results = run_external_validation(
+        seed=42,
+        results_file="validation_results_2024.pkl.gz"
+    )
+
+    # MODE 2: Run model fresh (will use FULL population from general_config)
+    # Uncomment the line below to run without pre-computed data:
+    # validation_results = run_external_validation(seed=42, save_results=True)
+
+    print("\n[SUCCESS] External validation complete!")
     print(f"  Check the 'plots/' directory for output files")
