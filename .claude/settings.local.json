@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python external_validation.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
