@@ -3,7 +3,6 @@ Periodontal Disease Sensitivity Analysis for Tornado Diagrams
 
 This module provides efficient one-way sensitivity analysis specifically for:
 1. Periodontal disease onset relative risk
-2. Periodontal disease severe-to-death relative risk
 
 Uses reduced population with scaling to make tornado diagram generation computationally feasible.
 """
@@ -14,9 +13,14 @@ from typing import Dict, Optional, Tuple, List
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from joblib import Parallel, delayed
 
-from IBM_PD_AD import run_model, extract_psa_metrics
+from IBM_PD_AD_v2 import (
+    run_model,
+    extract_psa_metrics,
+    _with_scaled_population_and_entrants,
+)
 
 
 def run_pd_sensitivity_analysis(
@@ -29,11 +33,10 @@ def run_pd_sensitivity_analysis(
     n_jobs: Optional[int] = None
 ) -> pd.DataFrame:
     """
-    One-way sensitivity analysis for periodontal disease relative risks.
+    One-way sensitivity analysis for periodontal disease relative risk.
 
     Varies only:
     - PD onset RR (95% CI: 1.32-1.65, base: 1.47)
-    - PD severe_to_death RR (95% CI: 1.10-1.69, base: 1.36)
 
     Args:
         base_config: Base model configuration
@@ -48,7 +51,7 @@ def run_pd_sensitivity_analysis(
                                metric values, replicate number
     """
     # Get original and reduced population sizes
-    original_pop = base_config.get('population', 33167098)
+    original_pop = base_config.get('population', 10787479)
     reduced_pop = int(original_pop * population_fraction)
 
     print("=" * 70)
@@ -59,9 +62,13 @@ def run_pd_sensitivity_analysis(
     print(f"Parallel jobs: {n_jobs or 'auto-detect'}")
     print()
 
-    # Create reduced population config
-    working_config = copy.deepcopy(base_config)
-    working_config['population'] = reduced_pop
+    # Create reduced population config and proportionally scale entrants +
+    # initial override counts so that the 1% run preserves per-capita dynamics.
+    working_config = _with_scaled_population_and_entrants(
+        base_config,
+        new_population=reduced_pop,
+        original_population=original_pop
+    )
 
     # Store original population for potential scaling by run_model
     if 'psa' not in working_config:
@@ -72,25 +79,19 @@ def run_pd_sensitivity_analysis(
     # Format: (low_95CI, high_95CI)
     parameters = {
         'onset_rr': (1.32, 1.65),           # 95% CI for onset
-        'severe_to_death_rr': (1.10, 1.69)  # 95% CI for severe_to_death
     }
 
     results_list = []
     rng = np.random.default_rng(seed)
 
     # Helper function to modify config
-    def set_pd_rr(config: dict, onset_rr: Optional[float] = None,
-                  std_rr: Optional[float] = None) -> dict:
-        """Set periodontal disease relative risks."""
+    def set_pd_rr(config: dict, onset_rr: Optional[float] = None) -> dict:
+        """Set periodontal disease onset relative risk."""
         cfg = copy.deepcopy(config)
 
         if onset_rr is not None:
             cfg['risk_factors']['periodontal_disease']['relative_risks']['onset']['female'] = onset_rr
             cfg['risk_factors']['periodontal_disease']['relative_risks']['onset']['male'] = onset_rr
-
-        if std_rr is not None:
-            cfg['risk_factors']['periodontal_disease']['relative_risks']['severe_to_death']['female'] = std_rr
-            cfg['risk_factors']['periodontal_disease']['relative_risks']['severe_to_death']['male'] = std_rr
 
         return cfg
 
@@ -151,30 +152,6 @@ def run_pd_sensitivity_analysis(
               f"(Δ={mean_qalys-baseline_mean:+,.0f})")
     print()
 
-    # 3. Test severe_to_death RR
-    print("Testing PD Severe-to-Death RR (95% CI: 1.10-1.69)...")
-    for value_type, rr_value in [('low', parameters['severe_to_death_rr'][0]),
-                                  ('high', parameters['severe_to_death_rr'][1])]:
-        test_config = set_pd_rr(working_config, std_rr=rr_value)
-        rep_seeds = [int(rng.integers(0, 2**32-1)) for _ in range(n_replicates)]
-
-        if n_jobs and n_jobs != 1:
-            reps = Parallel(n_jobs=n_jobs)(
-                delayed(run_replicate)(test_config, 'severe_to_death_rr', value_type, i, s)
-                for i, s in enumerate(rep_seeds)
-            )
-        else:
-            reps = []
-            for i, s in enumerate(rep_seeds):
-                print(f"  {value_type.capitalize()}: Replicate {i+1}/{n_replicates}", end='\r')
-                reps.append(run_replicate(test_config, 'severe_to_death_rr', value_type, i, s))
-            print()
-
-        results_list.extend(reps)
-        mean_qalys = pd.DataFrame(reps)['total_qalys_combined'].mean()
-        print(f"  {value_type.capitalize()} (RR={rr_value}): {mean_qalys:,.0f} QALYs "
-              f"(Δ={mean_qalys-baseline_mean:+,.0f})")
-    print()
 
     # Convert to DataFrame
     df = pd.DataFrame(results_list)
@@ -182,17 +159,22 @@ def run_pd_sensitivity_analysis(
     # Scale metrics by population fraction
     print(f"Scaling results by factor of {1/population_fraction:.0f}x...")
     scale_factor = 1.0 / population_fraction
-    metrics_to_scale = [
-        'total_costs_nhs', 'total_costs_informal', 'total_costs_all',
-        'total_qalys_patient', 'total_qalys_caregiver', 'total_qalys_combined',
-        'incident_onsets_total', 'stage_mild', 'stage_moderate', 'stage_severe'
-    ]
 
-    for metric in metrics_to_scale:
-        if metric in df.columns:
-            df[metric] = df[metric] * scale_factor
+    # Scale every numeric population metric, skipping rates/ratios to keep them invariant.
+    skip_keywords = ['rate', 'ratio', 'per_', 'prevalence', 'prob', 'hazard', 'mean', 'median']
+    protected_cols = {'parameter', 'value_type', 'replicate'}
 
-    print("✓ Sensitivity analysis complete!")
+    for col in df.columns:
+        if col in protected_cols:
+            continue
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            continue
+        name = col.lower()
+        if any(key in name for key in skip_keywords):
+            continue
+        df[col] = df[col] * scale_factor
+
+    print("OK Sensitivity analysis complete!")
     print("=" * 70)
     print()
 
@@ -251,8 +233,7 @@ def create_pd_tornado_diagram(
 
         # Parameter labels
         param_labels = {
-            'onset_rr': 'PD Onset RR\n(1.32-1.65)',
-            'severe_to_death_rr': 'PD Severe→Death RR\n(1.10-1.69)'
+            'onset_rr': 'PD Onset RR\n(1.32-1.65)'
         }
 
         # Plot bars
@@ -299,7 +280,6 @@ def create_pd_tornado_diagram(
         ax.ticklabel_format(style='plain', axis='x')
         if metric in ['total_costs_all', 'total_costs_nhs']:
             # Format as currency
-            import matplotlib.ticker as ticker
             ax.xaxis.set_major_formatter(ticker.FuncFormatter(
                 lambda x, p: f'£{x/1e9:.1f}B' if abs(x) >= 1e9 else f'£{x/1e6:.1f}M'
             ))
@@ -325,7 +305,7 @@ def create_pd_tornado_diagram(
         plt.show()
     plt.close()
 
-    print(f"\n✓ Saved tornado diagram to {save_path}")
+    print(f"\nOK Saved tornado diagram to {save_path}")
 
 
 def export_pd_sensitivity_results(
@@ -409,7 +389,7 @@ def export_pd_sensitivity_results(
         swing_df = pd.DataFrame(swing_list).sort_values('Swing', ascending=False)
         swing_df.to_excel(writer, sheet_name='Swing_Analysis', index=False)
 
-    print(f"✓ Exported results to {excel_path}")
+    print(f"OK Exported results to {excel_path}")
     print(f"  - Raw_Results: All replicate data")
     print(f"  - Summary_Statistics: Mean/std for each parameter value")
     print(f"  - Swing_Analysis: Parameter influence (high-low)")
@@ -417,7 +397,7 @@ def export_pd_sensitivity_results(
 
 # Example usage
 if __name__ == "__main__":
-    from IBM_PD_AD import general_config
+    from IBM_PD_AD_v2 import general_config
 
     # Load your base configuration
     config = general_config  # Use the built-in configuration

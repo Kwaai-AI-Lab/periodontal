@@ -3,18 +3,18 @@ Example script to run periodontal disease sensitivity analysis for tornado diagr
 
 This script:
 1. Loads the base configuration
-2. Runs sensitivity analysis on PD onset and severe-to-death RRs
+2. Runs sensitivity analysis on PD onset RR
 3. Generates tornado diagrams
 4. Exports results to Excel
 
 Computational note:
-- Uses 1% of population by default (331,671 agents from base of 33,167,098)
+- Uses 1% of population by default (107,875 agents from base of 10,787,479)
 - Runs 10 replicates per parameter value
-- Total: ~50 model runs (baseline + 2 params × 2 values × 10 reps each)
-- Estimated time: Several hours to days depending on CPU cores and model complexity
+- Total: ~30 model runs (baseline + 1 param × 2 values × 10 reps each)
+- Estimated time: Several hours depending on CPU cores and model complexity
 """
 
-from IBM_PD_AD import general_config
+from IBM_PD_AD_v2 import general_config
 from pd_sensitivity_analysis import (
     run_pd_sensitivity_analysis,
     create_pd_tornado_diagram,
@@ -33,12 +33,12 @@ def main():
     config = general_config.copy()
 
     # Optional: Customize config
-    # config['population'] = 33167098  # This will be reduced to 1% automatically
+    # config['population'] = 10787479  # This will be reduced to 1% automatically
     # config['number_of_timesteps'] = 17
     # config['base_year'] = 2023
 
     print("Configuration:")
-    print(f"  Base population: {config.get('population', 33167098):,} agents")
+    print(f"  Base population: {config.get('population', 10787479):,} agents")
     print(f"  Time horizon: {config.get('number_of_timesteps', 17)} timesteps")
     print(f"  Base year: {config.get('base_year', 2023)}")
     print()
@@ -53,10 +53,10 @@ def main():
         n_replicates=10,            # 10 replicates per parameter value
         combine_sexes=True,         # Vary both sexes together
         seed=42,                    # For reproducibility
-        n_jobs=4                    # Use 4 cores (Windows resource limits)
+        n_jobs=1                    # Use 4 cores (Windows resource limits)
     )
 
-    print(f"\n✓ Generated {len(results)} result rows")
+    print(f"\nOK Generated {len(results)} result rows")
     print()
 
     # Step 2: Create tornado diagrams
@@ -84,7 +84,7 @@ def main():
             show=False
         )
 
-    print("\n✓ All tornado diagrams created in plots/")
+    print("\nOK All tornado diagrams created in plots/")
     print()
 
     # Step 3: Export to Excel
@@ -116,7 +116,7 @@ def main():
 
     print("\nParameter Swings (High - Low):")
 
-    for param in ['onset_rr', 'severe_to_death_rr']:
+    for param in ['onset_rr']:
         param_data = results[results['parameter'] == param]
 
         low_qalys = param_data[param_data['value_type'] == 'low']['total_qalys_combined'].mean()
@@ -127,14 +127,14 @@ def main():
         high_cases = param_data[param_data['value_type'] == 'high']['incident_onsets_total'].mean()
         swing_cases = high_cases - low_cases
 
-        param_name = "PD Onset RR" if param == 'onset_rr' else "PD Severe→Death RR"
+        param_name = "PD Onset RR"
 
         print(f"\n  {param_name}:")
         print(f"    QALY swing: {swing_qalys:+,.0f} ({abs(swing_qalys/baseline_qalys*100):.2f}%)")
         print(f"    Case swing: {swing_cases:+,.0f} ({abs(swing_cases/baseline_cases*100):.2f}%)")
 
     print("\n" + "="*70)
-    print("✓ ANALYSIS COMPLETE!")
+    print("OK ANALYSIS COMPLETE!")
     print("="*70)
 
     print("\nOutput files:")
