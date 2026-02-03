@@ -1930,8 +1930,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.75,
-                'male': 0.75,
+                'female': 0.50,
+                'male': 0.50,
             },
             'relative_risks': {
                 'onset': {
@@ -4388,12 +4388,8 @@ def extract_psa_metrics(model_results: dict) -> dict:
     final_summary = summaries[final_step]
 
     total_incidence = 0
-    total_deaths = 0
-    total_entrants = 0
     for summary in summaries.values():
         total_incidence += int(summary.get('incident_onsets', 0) or 0)
-        total_deaths += int(summary.get('deaths', 0) or 0)
-        total_entrants += int(summary.get('entrants', 0) or 0)
 
     metrics = {
         'total_costs_nhs': float(final_summary.get('total_costs_nhs', 0.0) or 0.0),
@@ -4401,8 +4397,6 @@ def extract_psa_metrics(model_results: dict) -> dict:
         'total_qalys_patient': float(final_summary.get('total_qalys_patient', 0.0) or 0.0),
         'total_qalys_caregiver': float(final_summary.get('total_qalys_caregiver', 0.0) or 0.0),
         'incident_onsets_total': float(total_incidence),
-        'total_deaths': float(total_deaths),
-        'total_entrants': float(total_entrants),
     }
     metrics['total_costs_all'] = metrics['total_costs_nhs'] + metrics['total_costs_informal']
     metrics['total_qalys_combined'] = metrics['total_qalys_patient'] + metrics['total_qalys_caregiver']
@@ -4668,13 +4662,11 @@ def _with_scaled_population_and_entrants(base_config: dict,
                 op['entrants_per_year'] = max(0, scaled)
 
         overrides = cfg.get('initial_summary_overrides')
-        if isinstance(overrides, dict):
-            for key in ('entrants', 'incident_onsets', 'deaths'):
-                if key in overrides:
-                    base_val = overrides.get(key)
-                    if isinstance(base_val, (int, float)):
-                        scaled = int(round(base_val * ratio))
-                        overrides[key] = max(0, scaled)
+        if isinstance(overrides, dict) and 'entrants' in overrides:
+            base_entrants = overrides.get('entrants')
+            if isinstance(base_entrants, (int, float)):
+                scaled = int(round(base_entrants * ratio))
+                overrides['entrants'] = max(0, scaled)
 
     return cfg
 
