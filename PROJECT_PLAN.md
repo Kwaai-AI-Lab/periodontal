@@ -26,6 +26,116 @@
 
 ---
 
+## 🎉 MAJOR UPDATE - FEBRUARY 4, 2026
+
+### Alzheimer's Disease (AD) Study Manuscript Complete
+
+**Significant Progress**: The AD study has reached a major milestone with the completion of a full manuscript draft (`AD_FullText_v2_65.md`). This document includes:
+
+- ✅ **Complete Introduction**: Comprehensive background on PD-dementia link and systematic inflammation mechanisms
+- ✅ **Full Methods Section**: Individual-level microsimulation model (2023-2040) with detailed risk factor interactions
+- ✅ **Complete Results**: Three PD prevalence scenarios (25%, 50%, 75%) with:
+  - Epidemiological outcomes (dementia prevalence projections to 2040)
+  - Cost analysis (£22-23bn potential savings from 25% PD reduction)
+  - QALY calculations (patient and caregiver impacts)
+  - Sensitivity analyses (PSA with 500 iterations, one-way sensitivity)
+- ✅ **Full Reference List**: 52 citations properly formatted
+
+**Key Findings from AD Study**:
+- Reducing PD prevalence from 50% to 25% could prevent ~190,000 dementia cases (2024-2040)
+- Estimated cost savings: £23.3bn over forecast period (£1.43bn annually)
+- Cost per incident onset avoided: £118,000-£121,000
+- QALY gains: 232,586 (net) from 50%→25% PD reduction
+
+**Outstanding Tasks for AD Study Completion**:
+1. 🔄 **Add Discussion Section** to `AD_FullText_v2_65.md`
+   - Interpretation of findings
+   - Comparison with previous literature
+   - Policy and clinical implications
+   - Strengths and limitations
+   - Future research directions
+   - Conclusions
+2. 🔄 **Update/Create Supplementary Material**
+   - Technical appendix with full model parameters
+   - Detailed sensitivity analysis tables
+   - Additional figures and validation results
+3. ⏳ **Minor formatting adjustments** for target journal
+4. ⏳ **Addition of figure files** (currently referenced as "Figure XXX")
+5. ⏳ **Co-author review and final polish**
+
+**Implication**: The AD study is significantly further along than initially assessed. It may be ready for journal submission ahead of the CVD study.
+
+---
+
+## AD STUDY - COMPLETION ROADMAP (February 2026)
+
+Given the advanced state of the AD manuscript, here is a focused completion plan:
+
+### IMMEDIATE PRIORITIES (Week 1-2: Feb 4-17, 2026)
+
+**Task 1: Finalize Discussion Section** (Estimated: 6-8 hours)
+- [ ] Add prepared discussion text to `AD_FullText_v2_65.md`
+- [ ] Ensure discussion addresses:
+  - Principal findings and interpretation
+  - Biological mechanisms (PD-dementia link)
+  - Comparison with previous studies
+  - Policy implications for NHS
+  - Strengths of microsimulation approach
+  - Limitations (constant prevalence assumption, binary PD measure, etc.)
+  - Future research needs
+  - Clear conclusions
+
+**Task 2: Create/Update Supplementary Material** (Estimated: 8-10 hours)
+- [ ] Create `Supplementary_Material_AD.md` if not exists
+- [ ] Include:
+  - Full model parameter tables with sources
+  - Risk factor hazard ratios by sex
+  - Detailed transition probability matrices
+  - Cost calculation breakdowns (formal/informal care)
+  - QALY utility values by dementia stage
+  - Extended PSA results tables
+  - Model validation statistics and goodness-of-fit
+  - Additional sensitivity analysis details
+  - Flow diagrams for model structure
+
+**Task 3: Figure Preparation** (Estimated: 4-6 hours)
+- [x] Generate or locate figure files for:
+  - Figure 1: Cases per 1,000 population by PD prevalence (Cases_per_1000_PD_prevalence.png)
+  - Figure 2: Age-specific dementia prevalence differences by PD scenario (Age_differences_PD.png)
+  - Figure 3: Incremental impacts on dementia outcomes (Incremental_PD_dementia.png)
+  - Figure 4: Incremental impacts on QALYs (patient vs caregiver) (QALY_impacts.png)
+  - Figure 5: One-way sensitivity analysis results (SA_OneWay.png)
+- [x] Export as high-resolution PNG (completed - files in main directory)
+- [x] Create LaTeX version with figures inserted (AD_FullText_v2.tex)
+
+### SECONDARY PRIORITIES (Week 3-4: Feb 18-Mar 3, 2026)
+
+**Task 4: Abstract Development** (Estimated: 2-3 hours)
+- [ ] Draft structured abstract (250-300 words):
+  - Background (problem statement)
+  - Methods (model type, population, scenarios)
+  - Results (key numbers: cases prevented, costs saved, QALYs)
+  - Conclusions (policy implications)
+
+**Task 5: Journal Selection and Formatting** (Estimated: 3-4 hours)
+- [ ] Identify target journals:
+  - Primary: *The Lancet Public Health* (high impact, UK focus)
+  - Secondary: *PLoS Medicine* (health economics, open access)
+  - Tertiary: *Journal of Alzheimer's Disease* (disease-specific)
+- [ ] Format manuscript to journal guidelines
+- [ ] Prepare cover letter
+
+**Task 6: Internal Review and Polish** (Estimated: 4-6 hours)
+- [ ] Complete manuscript read-through for consistency
+- [ ] Verify all numbers match across sections
+- [ ] Check reference formatting
+- [ ] Proofread for grammar/typos
+- [ ] Ensure UK spelling throughout
+
+**Target Completion**: March 3, 2026 (4 weeks from Feb 4)
+
+---
+
 ## WEEK-BY-WEEK PLAN
 
 ### WEEK 1: Model Execution & Validation (Nov 18-24, 2025)
@@ -399,9 +509,12 @@
 | `PD_CVD_markov - PSA On.xlsm` | Markov model | 95% (needs execution) | Original file |
 | `EXCEL_MODEL_EXECUTION_GUIDE.md` | Model running instructions | 100% | Nov 12, 2025 |
 | `Results_CVD_TEMPLATE.md` | Results section template | 100% | Nov 12, 2025 |
+| `AD_FullText_v2_65.md` | **AD Study - Full manuscript draft** | 85% (needs discussion) | Converted Feb 4, 2026 |
+| `AD_FullText_v2.tex` | **AD Study - LaTeX version with figures** | 85% (needs discussion) | Created Feb 4, 2026 |
 
 ### Pending Artifacts (To Be Created)
 
+#### CVD Study
 | File | Description | Assigned Week | Owner |
 |------|-------------|---------------|-------|
 | Model outputs (CSV files) | Raw data from Excel | Week 1 | User |
@@ -411,6 +524,16 @@
 | `Abstract_CVD.md` | Abstract | Week 4 | User + AI |
 | `MANUSCRIPT_CVD_FULL.md` | Complete manuscript | Week 4 | User + AI |
 | `Cover_Letter_CVD.md` | Journal cover letter | Week 4 | User |
+
+#### AD Study (Priority Shifted - Near Completion)
+| File | Description | Timeline | Status |
+|------|-------------|----------|--------|
+| Discussion section | Add to `AD_FullText_v2.tex` | Week 1 (Feb 4-10) | ⏳ Pending |
+| `Supplementary_Material_AD.md` | Full technical appendix | Week 1-2 (Feb 4-17) | ⏳ Pending |
+| ~~Figures (PNG files)~~ | ~~5 figures for manuscript~~ | ~~Week 2 (Feb 11-17)~~ | ✅ **Complete** |
+| `AD_FullText_v2.tex` | LaTeX manuscript with figures | Week 1 (Feb 4) | ✅ **Complete** |
+| `Abstract_AD.md` | Structured abstract | Week 3 (Feb 18-24) | ⏳ Pending |
+| `Cover_Letter_AD.md` | Journal cover letter | Week 4 (Feb 25-Mar 3) | ⏳ Pending |
 
 ---
 
@@ -427,6 +550,7 @@
 | Dec 15, 2025 | **Discussion and abstract complete** | ⏳ Pending |
 | Dec 20, 2025 | **Full manuscript draft ready** | ⏳ Pending |
 | Dec 31, 2025 | **TARGET: Paper draft complete** | 🎯 Goal |
+| **Feb 4, 2026** | **AD Study full manuscript converted to MD** | ✅ **Complete** |
 
 ---
 
@@ -545,7 +669,8 @@ periodontal/
 │   ├── Intro_AD.md                         # ✅ Complete
 │   ├── Methodology_AD.md                   # ✅ Complete
 │   ├── Results_AD.md                       # ⏳ Pending (empty placeholders)
-│   └── Supplementary_Material_AD.md        # ✅ Complete
+│   ├── Supplementary_Material_AD.md        # ✅ Complete
+│   └── AD_FullText_v2_65.md                # ✅ Complete (Full manuscript draft - Feb 2026)
 │
 └── Archives (Original files)
     ├── Intro_AD.docx
@@ -554,7 +679,8 @@ periodontal/
     ├── Methodology_CVD.docx
     ├── Results_AD.docx
     ├── Supplementary_Material_AD.docx
-    └── Supplementary_Material_CVD.docx
+    ├── Supplementary_Material_CVD.docx
+    └── AD_FullText_v2_65.docx              # ✅ Converted to MD (Feb 2026)
 ```
 
 Recommended: Create an `outputs/` folder for Week 1 deliverables to keep project organized.
@@ -584,5 +710,9 @@ Complete     Week 1            Week 2            Week 3            Week 4       
 
 ---
 
-**Last Updated**: November 12, 2025
-**Next Review**: November 24, 2025 (End of Week 1)
+**Last Updated**: February 4, 2026
+**Next Review**: February 11, 2026 (AD Study Week 1 Check-in)
+
+**PROJECT STATUS SUMMARY (Feb 4, 2026)**:
+- **CVD Study**: Awaiting model execution (Week 1 of original plan)
+- **AD Study**: 85% complete - Discussion and supplementary material needed, targeting March 3, 2026 submission-ready date
