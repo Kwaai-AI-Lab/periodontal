@@ -78,7 +78,7 @@ def run_pd_sensitivity_analysis(
     # Define parameters to test based on confidence intervals
     # Format: (low_95CI, high_95CI)
     parameters = {
-        'onset_rr': (1.32, 1.65),           # 95% CI for onset
+        'onset_rr': (1.07, 1.38),           # 95% CI for onset
     }
 
     results_list = []

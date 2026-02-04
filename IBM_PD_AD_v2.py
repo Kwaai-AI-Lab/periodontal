@@ -1935,8 +1935,8 @@ general_config = {
             },
             'relative_risks': {
                 'onset': {
-                    'female': 1.47,
-                    'male': 1.47,
+                    'female': 1.21,
+                    'male': 1.21,
                 },
                 'mild_to_moderate': {
                     'female': 1.00,
@@ -2149,8 +2149,8 @@ PSA_DEFAULT_RELATIVE_SD = 0.10
 RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, float]]]] = {
     'periodontal_disease': {
         'onset': {
-            'female': (1.47, 1.32, 1.65),
-            'male': (1.47, 1.32, 1.65),
+            'female': (1.21, 1.07, 1.38),
+            'male': (1.21, 1.07, 1.38),
         },
         'severe_to_death': {
             'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
