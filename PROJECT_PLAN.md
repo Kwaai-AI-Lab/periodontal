@@ -670,7 +670,14 @@ periodontal/
 │   ├── Methodology_AD.md                   # ✅ Complete
 │   ├── Results_AD.md                       # ⏳ Pending (empty placeholders)
 │   ├── Supplementary_Material_AD.md        # ✅ Complete
-│   └── AD_FullText_v2_65.md                # ✅ Complete (Full manuscript draft - Feb 2026)
+│   ├── AD_FullText_v2_65.md                # ✅ Complete (Full manuscript draft - Feb 2026)
+│   ├── AD_FullText_v2.tex                  # ✅ Complete (LaTeX version with figures - Feb 2026)
+│   └── figures_AD/                         # ✅ Complete (5 PNG figures)
+│       ├── Cases_per_1000_PD_prevalence.png
+│       ├── Age_differences_PD.png
+│       ├── Incremental_PD_dementia.png
+│       ├── QALY_impacts.png
+│       └── SA_OneWay.png
 │
 └── Archives (Original files)
     ├── Intro_AD.docx
