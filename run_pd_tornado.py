@@ -14,7 +14,8 @@ Computational note:
 - Estimated time: Several hours depending on CPU cores and model complexity
 """
 
-from IBM_PD_AD_v2 import general_config
+# Use the v3 configuration (hazard-ratio based risk factors)
+from IBM_PD_AD_v3 import general_config
 from pd_sensitivity_analysis import (
     run_pd_sensitivity_analysis,
     create_pd_tornado_diagram,

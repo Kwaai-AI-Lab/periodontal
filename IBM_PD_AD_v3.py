@@ -250,12 +250,12 @@ def _sample_risk_factor_prevalence(risk_defs: Dict[str, dict],
             prevalence[sex_key] = _sample_probability_value(value, rel_sd, rng)
 
 
-def _sample_risk_factor_relative_risks(risk_defs: Dict[str, dict],
+def _sample_risk_factor_hazard_ratios(risk_defs: Dict[str, dict],
                                        rng: np.random.Generator) -> None:
     """Apply lognormal sampling to risk-factor hazard ratios when CI data is available."""
     for risk_name, meta in risk_defs.items():
         ci_lookup = RISK_FACTOR_HR_INTERVALS.get(risk_name, {})
-        rr_def = meta.get('relative_risks')
+        rr_def = meta.get('hazard_ratios')
         if not isinstance(rr_def, dict) or not ci_lookup:
             continue
         for transition, sex_map in rr_def.items():
@@ -345,7 +345,7 @@ general_config = {
     'initial_summary_overrides': {
         'deaths': 490000,
         'entrants': 700000,
-        'incident_onsets': 80000,
+        'incident_onsets': 90000,
     },
 
     'initial_stage_mix': {     #(VERIFIED, (Primary Care Dementia Data & Economic Impact Of Dementia CF Report))    # proportions by sex; each nested dict must sum to 1,
@@ -403,13 +403,6 @@ general_config = {
     # #(VERIFED, NHS England)  #   Baseline annual probability of onset if no duration is provided for normal->mild
     'base_onset_probability': 0.0025,
 
-    # Optional macro incidence growth (compounds onset hazard per calendar year)
-    'incidence_growth': {
-        'use': True,
-        'annual_rate': 0.0,  # Set to 0 (no growth)
-        'reference_year': 2023,
-    },
-
     ## (VERIFIED, Tariot et al(2024)) # Mean durations (years) => baseline hazards = 1/duration under exponential assumption
     'stage_transition_durations': {
         # 'normal_to_mild': 6,
@@ -419,171 +412,6 @@ general_config = {
     },
 
     # (VERIFIED, ONS) # Background mortality (annual absolute hazards by age band; replace with ONS by converting annual probability to hazard h = -ln(1-prob))
-    'background_mortality_hazards': {
-        'female': {
-            35: 0.000631199,
-            36: 0.000622194,
-            37: 0.000744277,
-            38: 0.000870379,
-            39: 0.000943445,
-            40: 0.001004504,
-            41: 0.00107758,
-            42: 0.001199719,
-            43: 0.001238767,
-            44: 0.001387963,
-            45: 0.001474086,
-            46: 0.00163133,
-            47: 0.00191884,
-            48: 0.001990981,
-            49: 0.002132272,
-            50: 0.002372813,
-            51: 0.002537216,
-            52: 0.002685603,
-            53: 0.002974419,
-            54: 0.003176038,
-            55: 0.00349209,
-            56: 0.003817277,
-            57: 0.004150602,
-            58: 0.004402678,
-            59: 0.004811557,
-            60: 0.005274888,
-            61: 0.005626801,
-            62: 0.006349113,
-            63: 0.00701253,
-            64: 0.007683442,
-            65: 0.008298336,
-            66: 0.009275888,
-            67: 0.010128117,
-            68: 0.011140829,
-            69: 0.012055375,
-            70: 0.013366941,
-            71: 0.014398158,
-            72: 0.015880429,
-            73: 0.017527717,
-            74: 0.019302093,
-            75: 0.021814209,
-            76: 0.024221998,
-            77: 0.027727889,
-            78: 0.031303894,
-            79: 0.035050142,
-            80: 0.040569943,
-            81: 0.045992631,
-            82: 0.052261131,
-            83: 0.058631734,
-            84: 0.066224208,
-            85: 0.075113709,
-            86: 0.086476611,
-            87: 0.097566523,
-            88: 0.112847361,
-            89: 0.127565226,
-            90: 0.146074877,
-            91: 0.166562387,
-            92: 0.190102953,
-            93: 0.213685916,
-            94: 0.237158808,
-            95: 0.265026004,
-            96: 0.291911002,
-            97: 0.327432419,
-            98: 0.364047771,
-            99: 0.39358644,
-            100: 0.438461552,
-        },
-        'male': {
-            35: 0.001129638,
-            36: 0.001270807,
-            37: 0.001342901,
-            38: 0.001447046,
-            39: 0.001617307,
-            40: 0.0017325,
-            41: 0.001872753,
-            42: 0.001971943,
-            43: 0.00211724,
-            44: 0.002277592,
-            45: 0.002506138,
-            46: 0.002683598,
-            47: 0.002940319,
-            48: 0.003267332,
-            49: 0.003525206,
-            50: 0.003829323,
-            51: 0.00406224,
-            52: 0.004496092,
-            53: 0.004703042,
-            54: 0.005099983,
-            55: 0.00545284,
-            56: 0.005884278,
-            57: 0.006429626,
-            58: 0.006883638,
-            59: 0.007414419,
-            60: 0.008167261,
-            61: 0.009077072,
-            62: 0.009761489,
-            63: 0.010590886,
-            64: 0.011667805,
-            65: 0.012624353,
-            66: 0.013983312,
-            67: 0.015533015,
-            68: 0.017026125,
-            69: 0.018353398,
-            70: 0.020152709,
-            71: 0.022175059,
-            72: 0.024319332,
-            73: 0.026198195,
-            74: 0.02844783,
-            75: 0.03174044,
-            76: 0.035692465,
-            77: 0.039667453,
-            78: 0.044963894,
-            79: 0.049874302,
-            80: 0.057289128,
-            81: 0.064013859,
-            82: 0.072640588,
-            83: 0.07986389,
-            84: 0.089929084,
-            85: 0.10094583,
-            86: 0.113810561,
-            87: 0.12878951,
-            88: 0.14638855,
-            89: 0.164157919,
-            90: 0.187110606,
-            91: 0.207099203,
-            92: 0.235637527,
-            93: 0.260684476,
-            94: 0.29167403,
-            95: 0.323528963,
-            96: 0.353340509,
-            97: 0.397973242,
-            98: 0.414895939,
-            99: 0.475423088,
-            100: 0.514090949,
-        }
-    },
-    # Optional scalar to calibrate overall mortality level while preserving age/sex shape
-    # Recalibrated (x0.7857) to target ~550k deaths with higher 85+ share
-    'background_mortality_scalar': 0.3571686747,
-    # Optional per-year scalar overrides (exact year match; falls back to schedule/growth if missing)
-    # Recalibrated with factor 0.7857143 to bring deaths toward ~550k per timestep.
-    'background_mortality_scalar_by_year': {
-        2023: 0.3571686747,
-        2024: 0.3283463114,
-        2025: 0.3392052549,
-        2026: 0.3393859442,
-        2027: 0.3384596483,
-        2028: 0.3368508989,
-        2029: 0.3348346041,
-        2030: 0.3335718125,
-        2031: 0.3295277229,
-        2032: 0.3236820734,
-        2033: 0.3174702329,
-        2034: 0.3099367889,
-        2035: 0.3040671544,
-        2036: 0.2965385489,
-        2037: 0.2910935184,
-        2038: 0.2863905431,
-        2039: 0.2824459996,
-        2040: 0.2800579313,
-    },
-    # Pre-baked per-year table: year -> sex -> age -> hazard (or qx if flagged below)
-    # Placeholder qx grid; replace with real ONS qx as needed.
     'background_mortality_hazards_by_year':
         {       2023: {       'female': {       65: 0.00784,
                                                 66: 0.00894,
@@ -1882,6 +1710,10 @@ general_config = {
                                               99: 0.36530,
                                               100: 0.39527}}},
     'background_mortality_hazards_by_year_is_qx': True,
+    # Calibrates background mortality downward (target ~600k deaths vs ~1.3M baseline run)
+    'background_mortality_scalar': 0.46,
+    # Exact per-year scalars (takes precedence over growth/schedule)
+    'background_mortality_scalar_by_year': {year: 0.46 for year in range(2023, 2041)},
     # Optional per-year scalar schedule (overrides growth/scalar if provided)
     # Example: {2023: 0.686, 2024: 0.686, 2025: 0.700}
     'background_mortality_scalar_schedule': {},
@@ -1893,160 +1725,63 @@ general_config = {
         'reference_year': 2023,
     },
 
-    # (VERIFIED, Crowell et al. 2023) # Dementia severity multipliers on background mortality hazard # Set to 1.00 after calibration, too strong for model
-    'dementia_mortality_multipliers': {
-        'cognitively_normal': 1.0,
-        'mild': 1.0,          #(1.49-2.91)
-        'moderate': 1.0,      #(1.94-3.35)
-        'severe': 1.0,        #(4.36-8.80)  ###
-    },
-
-    # Risk factor definitions with prevalence and hazard ratios by transition, meta-analysis and large cohort studies for onset, will be harder to find for progression HRs
+    # Risk factor definitions with prevalence and onset hazard ratios only
     'risk_factors': {
-        # Sex-specific constants (no age buckets) until more granular evidence is available.
+        'socioeconomic_disadvantage': {
+            'prevalence': {'female': 0.0, 'male': 0.0},  # union of low income & low SES (assuming independence)
+            'hazard_ratios': {'onset': {'all': 2.01}},
+        },
+        'low_education': {
+            'prevalence': {'female': 0.0, 'male': 0.0},
+            'hazard_ratios': {'onset': {'all': 1.64}},
+        },
+        'hearing_difficulty': {
+            'prevalence': {'female': 0.36, 'male': 0.36},
+            'hazard_ratios': {'onset': {'all': 1.21}},
+        },
+        'hypertension': {
+            'prevalence': {'female': 0.452, 'male': 0.452},
+            'hazard_ratios': {'onset': {'all': 1.36}},
+        },
+        'obesity': {
+            'prevalence': {'female': 0.243, 'male': 0.243},
+            'hazard_ratios': {'onset': {'all': 1.1}},
+        },
+        'lifestyle': {
+            'prevalence': {'female': 0.0, 'male': 0.0},  # combined prevalence from diet, activity, lifestyle score
+            'hazard_ratios': {'onset': {'all': 1.08}},
+        },
+        'excessive_alcohol_consumption': {
+            'prevalence': {'female': 0.0, 'male': 0.0},
+            'hazard_ratios': {'onset': {'all': 1.30}},
+        },
         'smoking': {
-            'prevalence': {
-                'female': 0.096, #(VERIFIED, ONS)
-                'male': 0.114,    #(VERIFIED, ONS)
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 1.49,
-                    'male': 1.34,
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,         # Set to 1.00 (no effect)
-                    'male': 1.00,          # Set to 1.00 (no effect)
-                },
-            },
-        },
-        'periodontal_disease': {
-            'prevalence': {
-                'female': 0.50,
-                'male': 0.50,
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 1.21,
-                    'male': 1.21,
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,      # Set to 1.00 (no effect)
-                    'male': 1.00,        # Set to 1.00 (no effect)
-                },
-            },
-        },
-        'cerebrovascular_disease': {
-            'prevalence': {
-                'female': 0.018,  #(VERIFIED, British Heart Foundation)
-                'male': 0.018,    #(VERIFIED, British Heart Foundation)
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 2.40,
-                    'male': 2.24,
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,      # Set to 1.00 (no effect)
-                    'male': 1.00,        # Set to 1.00 (no effect)
-                },
-            },
-        },
-        'CVD_disease': {
-            'prevalence': {
-                'female': 0.095,   #(VERIFIED, British Heart Foundation)
-                'male': 0.095,     #(VERIFIED, British Heart Foundation)
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 2.10,
-                    'male': 2.14,
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,    # Set to 1.00 (no effect)
-                    'male': 1.00,     # Set to 1.00 (no effect)
-                },
-            },
-        },
-        'diabetes': {
-            'prevalence': {
-                'female': 0.116,   #(VERIFIED, DoHSC)
-                'male': 0.116,     #(VERIFIED, DoHSC)
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 1.36,
-                    'male': 1.48,
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,  # Set to 1.00 (no effect)
-                    'male': 1.00,   # Set to 1.00 (no effect)
-                },
-            },
+            'prevalence': {'female': 0.0, 'male': 0.0},
+            'hazard_ratios': {'onset': {'all': 1.16}},
         },
         'depression': {
-            'prevalence': {
-                'female': 0.120,   #(ESTIMATE, NHS over-65 depressive symptoms ~12%)
-                'male': 0.080,     #(ESTIMATE, NHS over-65 depressive symptoms ~8%)
-            },
-            'relative_risks': {
-                'onset': {
-                    'female': 1.90,   #(ESTIMATE, meta-analyses 1.6-2.3)
-                    'male': 1.90,     #(ESTIMATE, meta-analyses 1.6-2.3)
-                },
-                'mild_to_moderate': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'moderate_to_severe': {
-                    'female': 1.00,
-                    'male': 1.00,
-                },
-                'severe_to_death': {
-                    'female': 1.00,  # Set to 1.00 (no effect)
-                    'male': 1.00,   # Set to 1.00 (no effect)
-                },
-            },
+            'prevalence': {'female': 0.068, 'male': 0.068},
+            'hazard_ratios': {'onset': {'all': 1.93}},
+        },
+        'social_isolation': {
+            'prevalence': {'female': 0.0, 'male': 0.0},
+            'hazard_ratios': {'onset': {'all': 1.34}},
+        },
+        'diabetes': {
+            'prevalence': {'female': 0.045, 'male': 0.045},
+            'hazard_ratios': {'onset': {'all': 2.06}},
+        },
+        'air_pollution': {
+            'prevalence': {'female': 0.0, 'male': 0.0},
+            'hazard_ratios': {'onset': {'all': 1.27}},
+        },
+        'APOE_e4_carrier': {
+            'prevalence': {'female': 0.256, 'male': 0.256},
+            'hazard_ratios': {'onset': {'all': 3.03}},
+        },
+        'periodontal_disease': {
+            'prevalence': {'female': 0.75, 'male': 0.75},
+            'hazard_ratios': {'onset': {'all': 1.21}},
         },
     },
 
@@ -2078,32 +1813,6 @@ general_config = {
         },
     },
 
-    # OFF ## Age hazard ratios (multipliers) for each transition (banded; fallback if parametric off)
-    # 65+ only model - removed age 60 reference
-    'age_risk_multipliers': {
-        'onset': {
-            65: 1.0,  # reference
-            70: 1.2,
-            75: 1.5,
-            80: 1.8,
-        },
-        'mild_to_moderate': {
-            65: 1.0,
-            75: 1.2,
-            80: 1.35,
-        },
-        'moderate_to_severe': {
-            65: 1.0,
-            75: 1.15,
-            80: 1.3,
-        },
-        'severe_to_death': {
-            65: 1.0,
-            75: 1.1,
-            80: 1.2,
-        },
-    },
-
     # --- NEW: Parametric (Cox-style) age effects for hazards ---
     'age_hr_parametric': {
         'use': True,      # flip to False to use banded HRs above
@@ -2117,7 +1826,7 @@ general_config = {
         },
     },
 
-    'discount_rate_annual': 0.035,
+    'discount_rate_annual': 0.0,
 
     # Discounting convention for costs/QALYs:
     # - 'start': start-of-cycle discounting (first cycle undiscounted)
@@ -2171,66 +1880,20 @@ general_config = {
 PSA_DEFAULT_RELATIVE_SD = 0.10
 
 RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, float]]]] = {
-    'periodontal_disease': {
-        'onset': {
-            'female': (1.21, 1.07, 1.38),
-            'male': (1.21, 1.07, 1.38),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
-    'smoking': {
-        'onset': {
-            'female': (1.49, 1.29, 1.72),
-            'male': (1.34, 1.19, 1.51),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
-    'cerebrovascular_disease': {
-        'onset': {
-            'female': (2.40, 1.91, 3.02),
-            'male': (2.24, 1.86, 2.71),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
-    'CVD_disease': {
-        'onset': {
-            'female': (2.10, 1.73, 2.54),
-            'male': (2.14, 1.85, 2.47),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
-    'diabetes': {
-        'onset': {
-            'female': (1.36, 1.02, 1.83),
-            'male': (1.48, 1.02, 2.15),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
-    'depression': {
-        'onset': {
-            'female': (1.90, 1.60, 2.30),
-            'male': (1.90, 1.60, 2.30),
-        },
-        'severe_to_death': {
-            'female': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-            'male': (1.00, 1.00, 1.00),  # Set to 1.00 (no effect)
-        },
-    },
+    'socioeconomic_disadvantage': {'onset': {'all': (2.01, 1.88, 2.15)}},
+    'low_education':            {'onset': {'all': (1.64, 1.52, 1.76)}},
+    'hearing_difficulty':       {'onset': {'all': (1.21, 1.15, 1.27)}},
+    'hypertension':             {'onset': {'all': (1.36, 1.28, 1.45)}},
+    'obesity':                  {'onset': {'all': (1.1, 1.03, 1.18)}},
+    'lifestyle':                {'onset': {'all': (1.08, 1.03, 1.2)}},
+    'excessive_alcohol_consumption': {'onset': {'all': (1.30, 1.23, 1.37)}},
+    'smoking':                  {'onset': {'all': (1.16, 1.10, 1.22)}},
+    'depression':               {'onset': {'all': (1.93, 1.74, 2.13)}},
+    'social_isolation':         {'onset': {'all': (1.34, 1.28, 1.41)}},
+    'diabetes':                 {'onset': {'all': (2.06, 1.92, 2.22)},},
+    'air_pollution':            {'onset': {'all': (1.27, 1.19, 1.35)}},
+    'APOE_e4_carrier':          {'onset': {'all': (3.20, 2.88, 3.19)}},
+    'periodontal_disease':      {'onset': {'all': (1.21, 1.07, 1.38)}},
 }
 
 
@@ -2747,12 +2410,12 @@ def get_prevalence_for_person(risk_meta: dict, age: int, sex: str) -> float:
         prevalence = 0.0
     return max(0.0, min(1.0, prevalence))
 
-def get_relative_risk_for_person(risk_meta: dict,
+def get_hazard_ratio_for_person(risk_meta: dict,
                                  transition: str,
                                  age: int,
                                  sex: str) -> float:
-    """Return the relative risk for the given transition, age, and sex (age ignored if scalar)."""
-    rr_spec = risk_meta.get('relative_risks', {})
+    """Return the hazard ratio for the given transition, age, and sex (age ignored if scalar)."""
+    rr_spec = risk_meta.get('hazard_ratios', {})
     transition_spec = rr_spec.get(transition, rr_spec.get('default', 1.0))
     raw = resolve_risk_value(transition_spec, age, sex)
     try:
@@ -3133,18 +2796,9 @@ def get_caregiver_qaly(age: float,
     This function exists for extensibility but returns None in current model."""
     return None
 
-def get_age_multiplier(age: int, age_risk_multipliers: Dict[str, Dict[int, float]], transition: str) -> float:
-    transition_multipliers = age_risk_multipliers.get(transition, {})
-    if not transition_multipliers:
-        return 1.0
-    thresholds = sorted(transition_multipliers)
-    eligible = [a for a in thresholds if a <= age]
-    key = eligible[-1] if eligible else thresholds[0]
-    return transition_multipliers[key]
-
-# NEW: unified age HR getter (parametric Cox-style or banded fallback)
+# NEW: unified age HR getter (parametric Cox-style)
 def get_age_hr_for_transition(age: int, config: dict, transition: str) -> float:
-    """Return age hazard ratio using exp(beta*(age-ref_age)) (optionally two-piece) or banded HRs."""
+    """Return age hazard ratio using exp(beta*(age-ref_age)) (optionally two-piece)."""
     param = config.get('age_hr_parametric', {})
     if param.get('use', False):
         ref_age = param.get('ref_age', 65)
@@ -3161,7 +2815,7 @@ def get_age_hr_for_transition(age: int, config: dict, transition: str) -> float:
             ratio_at_break = math.exp(beta_before * (break_age - ref_age))
             return ratio_at_break * math.exp(beta_after * (age - break_age))
         return math.exp(base_beta * (age - ref_age))
-    return get_age_multiplier(age, config.get('age_risk_multipliers', {}), transition)
+    return 1.0  # fallback: no age effect
 
 def apply_hazard_ratios(h_base: float,
                         risk_factors: Dict[str, bool],
@@ -3175,7 +2829,7 @@ def apply_hazard_ratios(h_base: float,
     for factor, active in risk_factors.items():
         if not active:
             continue
-        rr = get_relative_risk_for_person(risk_defs.get(factor, {}), transition_key, age, sex)
+        rr = get_hazard_ratio_for_person(risk_defs.get(factor, {}), transition_key, age, sex)
         h *= rr
     return h
 
@@ -3532,7 +3186,7 @@ def update_dementia_progression_optimized(population_state: Dict[int, dict],
         bg_table_all = (
             bg_by_year.get(calendar_year)
             or bg_by_year.get(str(calendar_year))
-            or config.get('background_mortality_hazards', {})
+            or {}
         )
         if isinstance(bg_table_all, dict) and any(isinstance(v, dict) for v in bg_table_all.values()):
             # nested by sex: choose table by person's sex, or fall back to 'all' or first available
@@ -4317,11 +3971,11 @@ def _counterfactual_config_without_risk(config: dict, risk_factor: str) -> dict:
         return cfg
 
     meta['prevalence'] = 0.0
-    rr_spec = meta.get('relative_risks', {})
+    rr_spec = meta.get('hazard_ratios', {})
     if isinstance(rr_spec, dict) and rr_spec:
-        meta['relative_risks'] = _replace_nested_values(rr_spec, 1.0)
+        meta['hazard_ratios'] = _replace_nested_values(rr_spec, 1.0)
     else:
-        meta['relative_risks'] = {
+        meta['hazard_ratios'] = {
             'onset': 1.0,
             'mild_to_moderate': 1.0,
             'moderate_to_severe': 1.0,
@@ -4406,7 +4060,7 @@ def apply_psa_draw(base_config: dict,
     risk_defs = cfg.get('risk_factors')
     if isinstance(risk_defs, dict):
         _sample_risk_factor_prevalence(risk_defs, rel_beta, rng)
-        _sample_risk_factor_relative_risks(risk_defs, rng)
+        _sample_risk_factor_hazard_ratios(risk_defs, rng)
 
     return cfg
 
@@ -6470,3 +6124,4 @@ if __name__ == "__main__":
 
     if os.environ.get("RUN_CALIBRATION_PLOTS", "0") == "1":
         run_calibration_prevalence_plots()
+

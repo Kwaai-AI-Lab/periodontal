@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python external_validation.py:*)"
+      "Bash(python external_validation.py:*)",
+      "Bash(python combine_hazard_ratios.py:*)"
     ],
     "deny": [],
     "ask": []

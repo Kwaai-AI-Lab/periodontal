@@ -21,7 +21,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-from IBM_PD_AD import run_model, general_config, save_results_compressed, load_results_compressed
+from IBM_PD_AD_v3 import (
+    run_model,
+    general_config,
+    save_results_compressed,
+    load_results_compressed,
+)
 import copy
 import os
 
@@ -38,10 +43,40 @@ OBSERVED_DATA_2024 = [
     [80, None, "M", 0.0910],
 ]
 
+# ONS England 2024 population (both sexes) by 5-year band (counts, not prevalence)
+# Source: user-provided table
+OBSERVED_POP_2024 = pd.DataFrame({
+    "age_lower": [65, 70, 75, 80, 85, 90],
+    "age_upper": [69, 74, 79, 84, 89, None],
+    "population_obs": [3_137_193, 2_735_296, 2_588_675, 1_640_827, 1_007_996, 563_609],
+})
 
-def run_model_to_2024(config, seed=42):
+# Observed recorded dementia diagnoses (counts) by 5-year age band and sex
+OBSERVED_DEMENTIA_COUNTS = {
+    2024: pd.DataFrame({
+        "age_lower": [65, 70, 75, 80, 85, 90] * 2,
+        "age_upper": [69, 74, 79, 84, 89, None] * 2,
+        "sex": ["M"] * 6 + ["F"] * 6,
+        "cases_obs": [
+            9532, 17908, 37002, 46968, 43787, 26883,    # male
+            8898, 19412, 46934, 70271, 80208, 75087     # female
+        ],
+    }),
+    2025: pd.DataFrame({
+        "age_lower": [65, 70, 75, 80, 85, 90] * 2,
+        "age_upper": [69, 74, 79, 84, 89, None] * 2,
+        "sex": ["M"] * 6 + ["F"] * 6,
+        "cases_obs": [
+            9715, 18364, 38543, 48785, 44962, 28111,    # male
+            9154, 19783, 48774, 72931, 81670, 76593     # female
+        ],
+    }),
+}
+
+
+def run_model_to_year(config, target_year=2024, seed=42):
     """
-    Run model to 2024 and return results
+    Run model to target_year and return results
 
     NOTE: This function runs with the FULL population from config.
     For a less memory-intensive approach, first run generate_validation_data.py
@@ -54,7 +89,7 @@ def run_model_to_2024(config, seed=42):
     seed : int
         Random seed for reproducibility
     """
-    print(f"Running model to 2024...")
+    print(f"Running model to {target_year}...")
     print(f"  Population: {config.get('population', 0):,}")
 
     # Create a copy of config to modify
@@ -62,7 +97,6 @@ def run_model_to_2024(config, seed=42):
 
     # Ensure model runs to 2024 by calculating number of timesteps needed
     base_year = int(validation_config.get('base_year', 2023))
-    target_year = 2024
     timesteps_needed = target_year - base_year
     validation_config['number_of_timesteps'] = timesteps_needed
 
@@ -73,6 +107,26 @@ def run_model_to_2024(config, seed=42):
 
     print(f"Model run complete. End year: {base_year + timesteps_needed}")
     return results
+
+
+def extract_population_by_age(results, year=2024):
+    """
+    Extract population alive by 5-year age band (65+) combining sexes.
+    Returns DataFrame with columns: age_lower, age_upper, population_pred
+    """
+    df = results['incidence_by_year_sex_df']
+    year_df = df[(df['calendar_year'] == year) & (df['sex'].isin(['male', 'female']))].copy()
+    if year_df.empty:
+        print(f"No incidence_by_year_sex_df rows for {year}")
+        return pd.DataFrame()
+
+    # group by age_lower (each 5-year band) summing both sexes
+    grouped = (
+        year_df.groupby(['age_lower', 'age_upper'], as_index=False)['population_alive_in_band']
+        .sum()
+        .rename(columns={'population_alive_in_band': 'population_pred'})
+    )
+    return grouped
 
 
 def extract_prevalence_by_age_sex(results, year=2024):
@@ -158,6 +212,38 @@ def extract_prevalence_by_age_sex(results, year=2024):
             })
 
     return pd.DataFrame(prevalence_data)
+
+
+def extract_prevalence_five_by_sex(results, year=2024):
+    """
+    Extract prevalence by 5-year bands (65+) and sex.
+    Returns columns: age_lower, age_upper, sex, prevalence, n_total, n_with_dementia, age_band
+    """
+    df = results['incidence_by_year_sex_df']
+    year_df = df[(df['calendar_year'] == year) & (df['sex'].isin(['male', 'female']))].copy()
+    if year_df.empty:
+        print(f"No data for year {year}")
+        return pd.DataFrame()
+
+    records = []
+    for sex_code, sex_name in [('M', 'male'), ('F', 'female')]:
+        sex_df = year_df[year_df['sex'] == sex_name]
+        grouped = (
+            sex_df.groupby(['age_lower', 'age_upper'], as_index=False)[
+                ['population_alive_in_band', 'prevalent_dementia_cases_in_band']
+            ].sum()
+        )
+        grouped['sex'] = sex_code
+        grouped['prevalence'] = grouped['prevalent_dementia_cases_in_band'] / grouped['population_alive_in_band']
+        grouped['age_band'] = grouped.apply(
+            lambda r: f"{int(r['age_lower'])}-{int(r['age_upper'])}" if pd.notna(r['age_upper']) else f"{int(r['age_lower'])}+", axis=1
+        )
+        grouped = grouped.rename(columns={
+            'population_alive_in_band': 'n_total',
+            'prevalent_dementia_cases_in_band': 'n_with_dementia'
+        })
+        records.append(grouped)
+    return pd.concat(records, ignore_index=True)
 
 
 def ols_fit(x, y):
@@ -255,6 +341,140 @@ def create_calibration_plot(predicted_df, observed_df, sex, save_dir):
 
     return fit_stats
 
+
+def run_population_validation(seed=42, save_dir="validation_outputs_pop"):
+    """
+    Validate model total population counts (65+) by 5-year age band against ONS 2024 estimates.
+    Runs IBM_PD_AD_v3 one timestep (2023->2024) on full population,
+    extracts population_alive_in_band, compares to ONS.
+    Returns dict with alpha, beta, r2 and writes a CSV comparison table.
+    """
+    save_dir = Path(save_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    # Run full population
+    results = run_model_to_year(general_config, target_year=2024, seed=seed)
+
+    predicted = extract_population_by_age(results, year=2024)
+    predicted['age_band'] = predicted.apply(
+        lambda r: f"{int(r['age_lower'])}-{int(r['age_upper'])}" if pd.notna(r['age_upper']) else f"{int(r['age_lower'])}+", axis=1
+    )
+
+    observed = OBSERVED_POP_2024.copy()
+    observed['age_band'] = observed.apply(
+        lambda r: f"{int(r['age_lower'])}-{int(r['age_upper'])}" if pd.notna(r['age_upper']) else f"{int(r['age_lower'])}+", axis=1
+    )
+
+    merged = predicted.merge(observed, on=['age_lower', 'age_upper', 'age_band'], how='inner')
+    merged['abs_error'] = merged['population_pred'] - merged['population_obs']
+    merged['relative_error_pct'] = merged['abs_error'] / merged['population_obs'] * 100
+
+    fit_stats = ols_fit(merged['population_pred'], merged['population_obs'])
+
+    # Save table
+    table_path = save_dir / "population_validation_table.csv"
+    merged[['age_band', 'population_obs', 'population_pred', 'abs_error', 'relative_error_pct']].to_csv(table_path, index=False)
+    print(f"Population comparison saved to {table_path}")
+
+    print("\nPopulation calibration statistics (counts, 2024):")
+    print(f"  Intercept (alpha): {fit_stats['alpha']:.2f}")
+    print(f"  Slope (beta):      {fit_stats['beta']:.6f}")
+    print(f"  R²:                {fit_stats['r2']:.4f}")
+
+    # Optional quick plot
+    plt.figure(figsize=(7,7))
+    plt.scatter(merged['population_pred'], merged['population_obs'], s=120, edgecolors='black', alpha=0.7)
+    max_val = max(merged['population_pred'].max(), merged['population_obs'].max()) * 1.1
+    x_line = np.linspace(0, max_val, 100)
+    plt.plot(x_line, x_line, 'k--', label='Perfect agreement')
+    plt.plot(x_line, fit_stats['alpha'] + fit_stats['beta'] * x_line, 'r-', label=f"Fit (β={fit_stats['beta']:.3f}, R²={fit_stats['r2']:.3f})")
+    for _, row in merged.iterrows():
+        plt.annotate(row['age_band'], (row['population_pred'], row['population_obs']), xytext=(5,5), textcoords='offset points')
+    plt.xlabel('Model population (2024)')
+    plt.ylabel('ONS population (2024)')
+    plt.title('Population Validation (65+, England 2024)')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.tight_layout()
+    plot_path = save_dir / "population_validation.png"
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Population plot saved to {plot_path}")
+
+    return {'alpha': fit_stats['alpha'], 'beta': fit_stats['beta'], 'r2': fit_stats['r2'], 'table': table_path, 'plot': plot_path}
+
+
+def run_prevalence_validation(year: int, seed=42, save_dir="validation_outputs_prev"):
+    """
+    Validate dementia prevalence by 5-year age band and sex using observed recorded diagnoses as proxy.
+    Observed prevalence = observed_cases / model_population_in_band (by sex).
+    """
+    save_dir = Path(save_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    if year not in OBSERVED_DEMENTIA_COUNTS:
+        raise ValueError(f"No observed counts available for year {year}")
+
+    results = run_model_to_year(general_config, target_year=year, seed=seed)
+
+    predicted = extract_prevalence_five_by_sex(results, year=year)
+    if predicted.empty:
+        raise RuntimeError("No predicted prevalence extracted.")
+
+    observed = OBSERVED_DEMENTIA_COUNTS[year].copy()
+    observed['age_band'] = observed.apply(
+        lambda r: f"{int(r['age_lower'])}-{int(r['age_upper'])}" if pd.notna(r['age_upper']) else f"{int(r['age_lower'])}+",
+        axis=1
+    )
+
+    merged = predicted.merge(
+        observed,
+        on=['age_lower', 'age_upper', 'sex', 'age_band'],
+        how='inner'
+    )
+
+    # Observed prevalence using model denominator (proxy)
+    merged['observed_prevalence'] = merged['cases_obs'] / merged['n_total']
+    merged['predicted_prevalence'] = merged['prevalence']
+    merged['abs_error'] = merged['predicted_prevalence'] - merged['observed_prevalence']
+    merged['relative_error_pct'] = merged['abs_error'] / merged['observed_prevalence'] * 100
+
+    fit_stats = ols_fit(merged['predicted_prevalence'], merged['observed_prevalence'])
+
+    # Save table
+    table_path = save_dir / f"prevalence_validation_{year}.csv"
+    merged[['age_band', 'sex', 'cases_obs', 'n_total', 'observed_prevalence',
+            'predicted_prevalence', 'abs_error', 'relative_error_pct']].to_csv(table_path, index=False)
+    print(f"Prevalence comparison saved to {table_path}")
+
+    # Plot
+    plt.figure(figsize=(7,7))
+    plt.scatter(merged['predicted_prevalence'], merged['observed_prevalence'],
+                s=120, edgecolors='black', alpha=0.7)
+    max_val = max(merged['predicted_prevalence'].max(), merged['observed_prevalence'].max()) * 1.1
+    x_line = np.linspace(0, max_val, 100)
+    plt.plot(x_line, x_line, 'k--', label='Perfect agreement')
+    plt.plot(x_line, fit_stats['alpha'] + fit_stats['beta'] * x_line, 'r-',
+             label=f"Fit (β={fit_stats['beta']:.3f}, R²={fit_stats['r2']:.3f})")
+    for _, row in merged.iterrows():
+        plt.annotate(f"{row['age_band']} {row['sex']}",
+                     (row['predicted_prevalence'], row['observed_prevalence']),
+                     xytext=(5,5), textcoords='offset points', fontsize=8)
+    plt.xlabel('Model prevalence')
+    plt.ylabel('Observed prevalence (proxy)')
+    plt.title(f'Dementia Prevalence Validation {year}')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.3)
+    plt.tight_layout()
+    plot_path = save_dir / f"prevalence_validation_{year}.png"
+    plt.savefig(plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Prevalence plot saved to {plot_path}")
+
+    print(f"\nPrevalence calibration {year}: alpha={fit_stats['alpha']:.6f}, beta={fit_stats['beta']:.6f}, R²={fit_stats['r2']:.4f}")
+
+    return {'alpha': fit_stats['alpha'], 'beta': fit_stats['beta'], 'r2': fit_stats['r2'],
+            'table': table_path, 'plot': plot_path, 'merged': merged}
 
 def create_comparison_table(predicted_df, observed_df, save_dir):
     """Create a comparison table showing predicted vs observed"""
@@ -426,21 +646,18 @@ def run_external_validation(seed=42, save_dir=None, results_file=None, save_resu
 
 
 if __name__ == "__main__":
-    # RECOMMENDED WORKFLOW:
-    # Step 1: Run generate_validation_data.py ONCE to create 2024 results (full population)
-    # Step 2: Run this script to load results and perform validation
+    # Population validation (counts)
+    pop_stats = run_population_validation(seed=42, save_dir="plots")
+    print("\n[SUCCESS] Population validation complete!")
+    print(f"  alpha={pop_stats['alpha']:.2f}, beta={pop_stats['beta']:.6f}, R²={pop_stats['r2']:.4f}")
+    print(f"  Table: {pop_stats['table']}")
+    print(f"  Plot:  {pop_stats['plot']}")
 
-    # MODE 1: Load pre-computed results (RECOMMENDED - fast, uses full population)
-    # First run: python generate_validation_data.py
-    # Then uncomment the line below:
-    validation_results = run_external_validation(
-        seed=42,
-        results_file="validation_results_2024.pkl.gz"
-    )
-
-    # MODE 2: Run model fresh (will use FULL population from general_config)
-    # Uncomment the line below to run without pre-computed data:
-    # validation_results = run_external_validation(seed=42, save_results=True)
-
-    print("\n[SUCCESS] External validation complete!")
-    print(f"  Check the 'plots/' directory for output files")
+    # Prevalence validation for 2024 and 2025
+    prev24 = run_prevalence_validation(year=2024, seed=42, save_dir="plots")
+    prev25 = run_prevalence_validation(year=2025, seed=42, save_dir="plots")
+    print("\n[SUCCESS] Prevalence validation complete!")
+    print(f"  2024: alpha={prev24['alpha']:.6f}, beta={prev24['beta']:.6f}, R²={prev24['r2']:.4f}")
+    print(f"        Table: {prev24['table']} | Plot: {prev24['plot']}")
+    print(f"  2025: alpha={prev25['alpha']:.6f}, beta={prev25['beta']:.6f}, R²={prev25['r2']:.4f}")
+    print(f"        Table: {prev25['table']} | Plot: {prev25['plot']}")
