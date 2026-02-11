@@ -1930,8 +1930,8 @@ general_config = {
         },
         'periodontal_disease': {
             'prevalence': {
-                'female': 0.50,
-                'male': 0.50,
+                'female': 0.75,
+                'male': 0.75,
             },
             'relative_risks': {
                 'onset': {

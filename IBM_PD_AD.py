@@ -559,7 +559,7 @@ general_config = {
         'smoking': {
             'prevalence': {
                 'female': 0.096, #(VERIFIED, ONS)
-                'male': 0.0114,    #(VERIFIED, ONS)
+                'male': 0.114,    #(VERIFIED, ONS)
             },
             'relative_risks': {
                 'onset': {
