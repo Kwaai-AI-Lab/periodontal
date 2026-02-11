@@ -1780,7 +1780,7 @@ general_config = {
             'hazard_ratios': {'onset': {'all': 3.03}},
         },
         'periodontal_disease': {
-            'prevalence': {'female': 0.50, 'male': 0.50},
+            'prevalence': {'female': 0.75, 'male': 0.75},
             'hazard_ratios': {'onset': {'all': 1.21}},
         },
     },

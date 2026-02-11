@@ -26,113 +26,93 @@
 
 ---
 
-## 🎉 MAJOR UPDATE - FEBRUARY 4, 2026
+## 🎉 MAJOR UPDATE - FEBRUARY 11, 2026
 
-### Alzheimer's Disease (AD) Study Manuscript Complete
+### AD Study Manuscript v3 — Discussion Now Complete
 
-**Significant Progress**: The AD study has reached a major milestone with the completion of a full manuscript draft (`AD_FullText_v2_65.md`). This document includes:
+**New file**: `AD_FullText_v3.md` (converted from `AD_FullText_v3.docx`). This supersedes `AD_FullText_v2_65.md` as the working manuscript.
 
-- ✅ **Complete Introduction**: Comprehensive background on PD-dementia link and systematic inflammation mechanisms
-- ✅ **Full Methods Section**: Individual-level microsimulation model (2023-2040) with detailed risk factor interactions
-- ✅ **Complete Results**: Three PD prevalence scenarios (25%, 50%, 75%) with:
-  - Epidemiological outcomes (dementia prevalence projections to 2040)
-  - Cost analysis (£22-23bn potential savings from 25% PD reduction)
-  - QALY calculations (patient and caregiver impacts)
-  - Sensitivity analyses (PSA with 500 iterations, one-way sensitivity)
-- ✅ **Full Reference List**: 52 citations properly formatted
+**Key changes in v3**:
+- ✅ **Complete Discussion Section** added (model validation, interpretation & policy implications, strengths & limitations)
+- ✅ **Updated title**: now "dementia" throughout (not "Alzheimer's disease")
+- ✅ **Updated key findings** (revised model outputs — see below)
+- ✅ **Updated references**: 45 citations
+- ✅ **Complete Introduction, Methods, and Results** sections retained from v2
 
-**Key Findings from AD Study**:
-- Reducing PD prevalence from 50% to 25% could prevent ~190,000 dementia cases (2024-2040)
-- Estimated cost savings: £23.3bn over forecast period (£1.43bn annually)
-- Cost per incident onset avoided: £118,000-£121,000
-- QALY gains: 232,586 (net) from 50%→25% PD reduction
+**Updated Key Findings (v3)**:
+- Reducing PD prevalence from 50% to 25% prevents **114,814** incident dementia cases (2024-2040)
+- Total cost savings: **£19.7bn** (£10.9bn formal + £8.8bn informal care)
+- Annual average saving: **£1.16bn**
+- Cost per case avoided: **~£172,000** (~5 years of dementia-related care)
+- Cohort QALYs: minimal variation across scenarios (<0.2% difference); caregiver QALYs inversely related to PD prevalence
 
-**Outstanding Tasks for AD Study Completion**:
-1. 🔄 **Add Discussion Section** to `AD_FullText_v2_65.md`
-   - Interpretation of findings
-   - Comparison with previous literature
-   - Policy and clinical implications
-   - Strengths and limitations
-   - Future research directions
-   - Conclusions
-2. 🔄 **Update/Create Supplementary Material**
-   - Technical appendix with full model parameters
-   - Detailed sensitivity analysis tables
-   - Additional figures and validation results
-3. ⏳ **Minor formatting adjustments** for target journal
-4. ⏳ **Addition of figure files** (currently referenced as "Figure XXX")
-5. ⏳ **Co-author review and final polish**
-
-**Implication**: The AD study is significantly further along than initially assessed. It may be ready for journal submission ahead of the CVD study.
+**Outstanding Tasks for v3 Completion**:
+1. ⏳ **Write Conclusion section** — currently only a header placeholder in `AD_FullText_v3.md`
+2. ⏳ **Complete one-way sensitivity analysis results** — results paragraph contains `XXX` placeholder
+3. ⏳ **Resolve all `Table XXX` / `Figure XXX` cross-references** — numbering throughout document
+4. ⏳ **Draft Abstract** — absent from v3
+5. ⏳ **Supplementary Material** — technical appendix with full model parameters, detailed SA tables, validation results
+6. ⏳ **Minor formatting** for target journal
 
 ---
 
-## AD STUDY - COMPLETION ROADMAP (February 2026)
+## AD STUDY - COMPLETION ROADMAP (Updated February 11, 2026)
 
-Given the advanced state of the AD manuscript, here is a focused completion plan:
+### IMMEDIATE PRIORITIES (Week of Feb 11-17, 2026)
 
-### IMMEDIATE PRIORITIES (Week 1-2: Feb 4-17, 2026)
+**Task 1: Write Conclusion Section**
+- [ ] Add conclusion to `AD_FullText_v3.md` (currently only a header placeholder)
+- [ ] Should cover:
+  - Summary of principal findings (cases prevented, cost savings)
+  - PD as a weak but ubiquitous risk factor
+  - Policy implications for NHS oral health integration
+  - Call for further cost-effectiveness research on specific PD interventions
 
-**Task 1: Finalize Discussion Section** (Estimated: 6-8 hours)
-- [ ] Add prepared discussion text to `AD_FullText_v2_65.md`
-- [ ] Ensure discussion addresses:
-  - Principal findings and interpretation
-  - Biological mechanisms (PD-dementia link)
-  - Comparison with previous studies
-  - Policy implications for NHS
-  - Strengths of microsimulation approach
-  - Limitations (constant prevalence assumption, binary PD measure, etc.)
-  - Future research needs
-  - Clear conclusions
+**Task 2: Complete One-Way Sensitivity Analysis Results**
+- [ ] Fill in the `XXX` placeholder in the one-way SA results paragraph
+- [ ] Confirm tornado diagram values align with `plots/pd_tornado_diagram.png`
 
-**Task 2: Create/Update Supplementary Material** (Estimated: 8-10 hours)
-- [ ] Create `Supplementary_Material_AD.md` if not exists
-- [ ] Include:
-  - Full model parameter tables with sources
-  - Risk factor hazard ratios by sex
-  - Detailed transition probability matrices
-  - Cost calculation breakdowns (formal/informal care)
-  - QALY utility values by dementia stage
-  - Extended PSA results tables
-  - Model validation statistics and goodness-of-fit
-  - Additional sensitivity analysis details
-  - Flow diagrams for model structure
+**Task 3: Resolve Cross-Reference Placeholders**
+- [ ] Replace all `Table XXX` and `Figure XXX` with correct numbering
+- [ ] Verify figure captions match figure content (4 figures extracted to `images/`)
 
-**Task 3: Figure Preparation** (Estimated: 4-6 hours)
-- [x] Generate or locate figure files for:
-  - Figure 1: Cases per 1,000 population by PD prevalence (Cases_per_1000_PD_prevalence.png)
-  - Figure 2: Age-specific dementia prevalence differences by PD scenario (Age_differences_PD.png)
-  - Figure 3: Incremental impacts on dementia outcomes (Incremental_PD_dementia.png)
-  - Figure 4: Incremental impacts on QALYs (patient vs caregiver) (QALY_impacts.png)
-  - Figure 5: One-way sensitivity analysis results (SA_OneWay.png)
-- [x] Export as high-resolution PNG (completed - files in main directory)
-- [x] Create LaTeX version with figures inserted (AD_FullText_v2.tex)
-
-### SECONDARY PRIORITIES (Week 3-4: Feb 18-Mar 3, 2026)
-
-**Task 4: Abstract Development** (Estimated: 2-3 hours)
-- [ ] Draft structured abstract (250-300 words):
-  - Background (problem statement)
-  - Methods (model type, population, scenarios)
-  - Results (key numbers: cases prevented, costs saved, QALYs)
+**Task 4: Draft Abstract**
+- [ ] Write structured abstract (250-300 words):
+  - Background (PD-dementia link, rising costs)
+  - Methods (individual-level microsimulation, England 65+, 2024-2040, three PD scenarios)
+  - Results (114,814 cases prevented, £19.7bn savings, QALY findings)
   - Conclusions (policy implications)
 
-**Task 5: Journal Selection and Formatting** (Estimated: 3-4 hours)
+### SECONDARY PRIORITIES (Week of Feb 18-Mar 3, 2026)
+
+**Task 5: Create/Update Supplementary Material**
+- [ ] Create or update `Supplementary_Material_AD.md`
+- [ ] Include:
+  - Full model parameter tables with sources
+  - Risk factor hazard ratios (Table XXX referenced in text)
+  - Detailed transition probability matrices
+  - Cost calculation breakdowns (formal/informal care by setting)
+  - QALY utility values by dementia stage and caregiver disutility
+  - Extended PSA results tables (referenced in text)
+  - Model validation statistics and goodness-of-fit (referenced in Discussion)
+  - Institutionalisation rate figures (referenced in Discussion)
+
+**Task 6: Journal Selection and Formatting**
 - [ ] Identify target journals:
   - Primary: *The Lancet Public Health* (high impact, UK focus)
   - Secondary: *PLoS Medicine* (health economics, open access)
-  - Tertiary: *Journal of Alzheimer's Disease* (disease-specific)
+  - Tertiary: *Lancet Healthy Longev* (aligns with comparable studies cited)
 - [ ] Format manuscript to journal guidelines
 - [ ] Prepare cover letter
 
-**Task 6: Internal Review and Polish** (Estimated: 4-6 hours)
+**Task 7: Internal Review and Polish**
 - [ ] Complete manuscript read-through for consistency
-- [ ] Verify all numbers match across sections
-- [ ] Check reference formatting
+- [ ] Verify all numbers match across sections (v3 has updated figures — cross-check all)
+- [ ] Check reference formatting (45 references, some URLs blank in converted MD)
 - [ ] Proofread for grammar/typos
 - [ ] Ensure UK spelling throughout
 
-**Target Completion**: March 3, 2026 (4 weeks from Feb 4)
+**Target Completion**: March 3, 2026
 
 ---
 
@@ -503,14 +483,13 @@ Given the advanced state of the AD manuscript, here is a focused completion plan
 | File | Description | Completeness | Last Updated |
 |------|-------------|--------------|--------------|
 | `README.md` | Project overview | 100% | Nov 12, 2025 |
-| `Intro_CVD.md` | Introduction section | 100% | Converted Nov 12 |
-| `Methodology_CVD.md` | Methods section | 100% | Converted Nov 12 |
-| `Supplementary_Material_CVD.md` | Technical appendix | 60% (tables empty) | Converted Nov 12 |
-| `PD_CVD_markov - PSA On.xlsm` | Markov model | 95% (needs execution) | Original file |
-| `EXCEL_MODEL_EXECUTION_GUIDE.md` | Model running instructions | 100% | Nov 12, 2025 |
-| `Results_CVD_TEMPLATE.md` | Results section template | 100% | Nov 12, 2025 |
-| `AD_FullText_v2_65.md` | **AD Study - Full manuscript draft** | 85% (needs discussion) | Converted Feb 4, 2026 |
-| `AD_FullText_v2.tex` | **AD Study - LaTeX version with figures** | 85% (needs discussion) | Created Feb 4, 2026 |
+| `CVD_Study/Main_Text_CVD_Paper_finalised.tex` | CVD manuscript (LaTeX) | 100% | Original file |
+| `CVD_Study/Supplementary_Material_CVD.tex` | CVD supplementary material | 60% (tables empty) | Converted Nov 12 |
+| `CVD_Study/PD_CVD_markov - PSA On.xlsm` | CVD Markov model | 95% (needs execution) | Original file |
+| `CVD_Study/EXCEL_MODEL_EXECUTION_GUIDE.md` | Model running instructions | 100% | Nov 12, 2025 |
+| `AD_Model_v2/AD_FullText_v2_65.md` | AD Study - Full manuscript draft (superseded) | 85% (superseded by v3) | Converted Feb 4, 2026 |
+| `AD_Model_v2/AD_FullText_v2.tex` | AD Study - LaTeX version with figures (superseded) | 85% (superseded by v3) | Created Feb 4, 2026 |
+| `AD_Model_v3/AD_FullText_v3.md` | **AD Study - Updated manuscript with Discussion** | 90% (needs conclusion, abstract, cross-refs) | Converted Feb 11, 2026 |
 
 ### Pending Artifacts (To Be Created)
 
@@ -519,21 +498,24 @@ Given the advanced state of the AD manuscript, here is a focused completion plan
 |------|-------------|---------------|-------|
 | Model outputs (CSV files) | Raw data from Excel | Week 1 | User |
 | Figures (PNG files) | CE plane, CEAC, tornado, trace | Week 1 | User |
-| `Results_CVD.md` | Complete results section | Week 3 | User + AI |
-| `Discussion_CVD.md` | Discussion section | Week 4 | User + AI |
-| `Abstract_CVD.md` | Abstract | Week 4 | User + AI |
-| `MANUSCRIPT_CVD_FULL.md` | Complete manuscript | Week 4 | User + AI |
-| `Cover_Letter_CVD.md` | Journal cover letter | Week 4 | User |
+| `CVD_Study/Results_CVD.md` | Complete results section | Week 3 | User + AI |
+| `CVD_Study/Discussion_CVD.md` | Discussion section | Week 4 | User + AI |
+| `CVD_Study/Abstract_CVD.md` | Abstract | Week 4 | User + AI |
+| `CVD_Study/MANUSCRIPT_CVD_FULL.md` | Complete manuscript | Week 4 | User + AI |
+| `CVD_Study/Cover_Letter_CVD.md` | Journal cover letter | Week 4 | User |
 
 #### AD Study (Priority Shifted - Near Completion)
 | File | Description | Timeline | Status |
 |------|-------------|----------|--------|
-| Discussion section | Add to `AD_FullText_v2.tex` | Week 1 (Feb 4-10) | ⏳ Pending |
-| `Supplementary_Material_AD.md` | Full technical appendix | Week 1-2 (Feb 4-17) | ⏳ Pending |
+| ~~Discussion section~~ | ~~Add to manuscript~~ | ~~Week 1 (Feb 4-10)~~ | ✅ **Complete (in v3)** |
+| Conclusion section | Add to `AD_Model_v3/AD_FullText_v3.md` | Week 1 (Feb 11-17) | ⏳ Pending |
+| One-way SA results text | Fill `XXX` placeholder in v3 | Week 1 (Feb 11-17) | ⏳ Pending |
+| Figure/Table cross-references | Resolve all `XXX` numbering in v3 | Week 1 (Feb 11-17) | ⏳ Pending |
+| `AD_Model_v3/Supplementary_Material_AD.md` | Full technical appendix | Week 2 (Feb 18-24) | ⏳ Pending |
 | ~~Figures (PNG files)~~ | ~~5 figures for manuscript~~ | ~~Week 2 (Feb 11-17)~~ | ✅ **Complete** |
-| `AD_FullText_v2.tex` | LaTeX manuscript with figures | Week 1 (Feb 4) | ✅ **Complete** |
-| `Abstract_AD.md` | Structured abstract | Week 3 (Feb 18-24) | ⏳ Pending |
-| `Cover_Letter_AD.md` | Journal cover letter | Week 4 (Feb 25-Mar 3) | ⏳ Pending |
+| ~~`AD_Model_v2/AD_FullText_v2.tex`~~ | ~~LaTeX manuscript with figures~~ | ~~Week 1 (Feb 4)~~ | ✅ **Superseded by v3** |
+| `AD_Model_v3/Abstract_AD.md` | Structured abstract | Week 2 (Feb 11-24) | ⏳ Pending |
+| `AD_Model_v3/Cover_Letter_AD.md` | Journal cover letter | Week 4 (Feb 25-Mar 3) | ⏳ Pending |
 
 ---
 
@@ -551,6 +533,10 @@ Given the advanced state of the AD manuscript, here is a focused completion plan
 | Dec 20, 2025 | **Full manuscript draft ready** | ⏳ Pending |
 | Dec 31, 2025 | **TARGET: Paper draft complete** | 🎯 Goal |
 | **Feb 4, 2026** | **AD Study full manuscript converted to MD** | ✅ **Complete** |
+| **Feb 11, 2026** | **AD Study v3 (with Discussion) converted to MD** | ✅ **Complete** |
+| **Feb 17, 2026** | **AD Study v3 — Conclusion, SA results, cross-refs resolved** | ⏳ Pending |
+| **Feb 24, 2026** | **AD Study abstract drafted, supplementary material updated** | ⏳ Pending |
+| **Mar 3, 2026** | **AD Study submission-ready** | 🎯 Target |
 
 ---
 
@@ -644,50 +630,61 @@ Given the advanced state of the AD manuscript, here is a focused completion plan
 periodontal/
 ├── README.md                               # Project overview
 ├── PROJECT_PLAN.md                         # This document
-├── EXCEL_MODEL_EXECUTION_GUIDE.md          # How to run model
+├── TODO.md                                 # Outstanding tasks
+├── LICENSE
+├── convert_word_to_md.py                   # Utility: .docx → .md conversion
+├── backend/                                # Web application backend
 │
-├── CVD Study (Priority 1)
-│   ├── Intro_CVD.md                        # ✅ Complete
-│   ├── Methodology_CVD.md                  # ✅ Complete
-│   ├── Supplementary_Material_CVD.md       # 🔄 In progress (60%)
-│   ├── Results_CVD_TEMPLATE.md             # ✅ Template ready
+├── CVD_Study/                              # CVD Markov model study
+│   ├── PD_CVD_markov - PSA On.xlsm        # Excel Markov model
+│   ├── Main_Text_CVD_Paper_finalised.tex   # CVD manuscript (LaTeX)
+│   ├── Supplementary_Material_CVD.tex      # CVD supplementary (LaTeX)
+│   ├── EXCEL_MODEL_EXECUTION_GUIDE.md      # How to run model
+│   ├── CONTRIBUTING.md                     # CVD model contribution guide
+│   ├── convert_cvd_to_md.py                # CVD doc conversion script
+│   ├── generate_cvd_figures.py             # CVD figure generation
+│   ├── images_CVD/                         # CVD manuscript images
 │   ├── Results_CVD.md                      # ⏳ To be created (Week 3)
 │   ├── Discussion_CVD.md                   # ⏳ To be created (Week 4)
 │   ├── Abstract_CVD.md                     # ⏳ To be created (Week 4)
 │   ├── MANUSCRIPT_CVD_FULL.md              # ⏳ To be created (Week 4)
-│   ├── PD_CVD_markov - PSA On.xlsm         # Excel model
-│   └── outputs/                            # Folder for CSV and PNG outputs
-│       ├── CVD_base_case_results.csv
-│       ├── CVD_PSA_raw_data.csv
-│       ├── CVD_one_way_sensitivity.csv
-│       ├── CVD_CE_Plane.png
-│       ├── CVD_CEAC.png
-│       ├── CVD_Tornado.png
-│       └── CVD_Markov_Trace.png
+│   └── Cover_Letter_CVD.md                 # ⏳ To be created (Week 4)
 │
-├── AD Study (Deferred to Q1 2026)
-│   ├── Intro_AD.md                         # ✅ Complete
-│   ├── Methodology_AD.md                   # ✅ Complete
-│   ├── Results_AD.md                       # ⏳ Pending (empty placeholders)
-│   ├── Supplementary_Material_AD.md        # ✅ Complete
-│   ├── AD_FullText_v2_65.md                # ✅ Complete (Full manuscript draft - Feb 2026)
-│   ├── AD_FullText_v2.tex                  # ✅ Complete (LaTeX version with figures - Feb 2026)
-│   └── figures_AD/                         # ✅ Complete (5 PNG figures)
-│       ├── Cases_per_1000_PD_prevalence.png
-│       ├── Age_differences_PD.png
-│       ├── Incremental_PD_dementia.png
-│       ├── QALY_impacts.png
-│       └── SA_OneWay.png
+├── AD_Model_v3/                            # AD microsimulation v3 (current)
+│   ├── IBM_PD_AD_v3.py                     # Main simulation model
+│   ├── run_psa_direct_v3.py                # PSA runner
+│   ├── run_pd_tornado.py                   # Tornado diagram runner
+│   ├── rerun_pd_tornado_from_export.py     # Re-run tornado from export
+│   ├── pd_sensitivity_analysis.py          # Sensitivity analysis
+│   ├── combine_hazard_ratios.py            # HR combination utility
+│   ├── external_validation.py              # External validation script
+│   ├── generate_validation_data.py         # Validation data generator
+│   ├── AD_FullText_v3.md                   # ✅ Working manuscript (Discussion added)
+│   ├── AD_FullText_v3.docx                 # Source Word document
+│   ├── PD_SENSITIVITY_README.md            # Sensitivity analysis guide
+│   ├── EXTERNAL_VALIDATION_README.md       # Validation guide
+│   ├── psa_results_25_v3/                  # PSA outputs (25% scenario)
+│   ├── psa_results_50_v3/                  # PSA outputs (50% scenario)
+│   ├── psa_results_75_v3/                  # PSA outputs (75% scenario)
+│   ├── plots/                              # Model output plots
+│   ├── figures_AD/                         # ✅ Manuscript figures (5 PNGs)
+│   ├── images_AD/                          # ✅ Docx-extracted figures (4 PNGs)
+│   ├── Abstract_AD.md                      # ⏳ To be created
+│   ├── Supplementary_Material_AD.md        # ⏳ To be created
+│   └── Cover_Letter_AD.md                  # ⏳ To be created
 │
-└── Archives (Original files)
-    ├── Intro_AD.docx
-    ├── Intro_CVD.docx
-    ├── Methodology_AD.docx
-    ├── Methodology_CVD.docx
-    ├── Results_AD.docx
-    ├── Supplementary_Material_AD.docx
-    ├── Supplementary_Material_CVD.docx
-    └── AD_FullText_v2_65.docx              # ✅ Converted to MD (Feb 2026)
+└── AD_Model_v2/                            # AD microsimulation v1/v2 (archived)
+    ├── IBM_PD_AD.py                        # v1 simulation model
+    ├── IBM_PD_AD_v2.py                     # v2 simulation model
+    ├── run_psa_direct.py                   # v1 PSA runner
+    ├── run_psa_direct_v2.py                # v2 PSA runner
+    ├── example_psa_visualization.py        # PSA visualisation example
+    ├── IBM_PD_AD_V2_README.md              # v2 model readme
+    ├── AD_FullText_v2_65.md                # v2 manuscript (superseded)
+    ├── AD_FullText_v2.tex                  # v2 LaTeX manuscript (superseded)
+    ├── AD_FullText_v2_65.docx              # v2 source Word document
+    ├── AD_Microsimulation_results/         # v2 PSA results
+    └── results/                            # v1 baseline model results
 ```
 
 Recommended: Create an `outputs/` folder for Week 1 deliverables to keep project organized.
@@ -717,9 +714,9 @@ Complete     Week 1            Week 2            Week 3            Week 4       
 
 ---
 
-**Last Updated**: February 4, 2026
-**Next Review**: February 11, 2026 (AD Study Week 1 Check-in)
+**Last Updated**: February 11, 2026
+**Next Review**: February 17, 2026 (AD Study Week 1 Check-in)
 
-**PROJECT STATUS SUMMARY (Feb 4, 2026)**:
+**PROJECT STATUS SUMMARY (Feb 11, 2026)**:
 - **CVD Study**: Awaiting model execution (Week 1 of original plan)
-- **AD Study**: 85% complete - Discussion and supplementary material needed, targeting March 3, 2026 submission-ready date
+- **AD Study**: ~90% complete — `AD_FullText_v3.md` now has full Discussion; remaining tasks are Conclusion section, one-way SA placeholder text, figure/table cross-reference numbering, abstract, and supplementary material. Targeting March 3, 2026 submission-ready date.
