@@ -56,7 +56,7 @@ QALYs are commonly used to value the benefit of interventions, with one QALY equ
 **Table 2** Yearly costs by dementia stage by living setting (£)
 
 
-![Figure 1](images_AD/figure_1.png)
+![Figure 1](images/figure_1.png)
 
 **Figure 1** Flowchart of care setting allocation compared to Carnall Farrar 2024 report
 
@@ -97,7 +97,7 @@ Over the 2024-2040 forecast period, cumulative dementia incidence at the current
 **Table 3** Outcomes by scenario. PD = periodontal disease. 2024£ costs. 
 
 
-![Figure 2](images_AD/figure_2.png)
+![Figure 2](images/figure_2.png)
 
 **Figure 2** Comparative risk factor landscape at 50% PD prevalence baseline 
 
@@ -106,11 +106,11 @@ Over the 2024-2040 forecast period, cumulative dementia incidence at the current
 Cumulative formal healthcare costs at a PD prevalence of 50% reached £351.49bn. At 25% prevalence, there was formal healthcare cost savings of £10.92bn (3.1% reduction), while a prevalence of 75% resulted in additional costs of £10.85bn (3.0% increase). Initially, informal healthcare costs exceeded formal healthcare costs (2024: £18.4bn vs £9bn) but were surpassed in 2027 (formal care: £17.11bn; informal care: 16.41bn). This is as more individuals with dementia moved into institutional care (for 50% prevalence run: 2024: 12% in formal care institution; 2027: 30% in formal care institution; 2030: 36% in formal care institution; 2040: 38% in formal care institution), and as the time progressed in the model those in care accrued more per-person costs. Cumulative informal healthcare costs at a PD prevalence of 50% reached £276.94bn. 25% PD prevalence saw informal cost savings of £8.81bn, and a PD prevalence of 75% resulted in an increase of £8.77bn. Over the forecast period, this averages to £171,000-£173,000 total saved per dementia case avoided. Given an average dementia cost per individual (2024-2040) of £35,977 (50% prevalence), this implies that preventing one case avoids approximately 5-years of dementia-related care costs. This can also be interpreted as the average duration individuals live with dementia in the model. 
 
 
-![Figure 3](images_AD/figure_3.png)
+![Figure 3](images/figure_3.png)
 
 **Figure 3** Annual dementia costs by periodontal disease prevalence scenario
 
-![Figure 4](images_AD/figure_4.png)
+![Figure 4](images/figure_4.png)
 
 **Figure 4** Cumulative QALY differences from 50% baseline 2024-2040
 
