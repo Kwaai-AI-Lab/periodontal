@@ -1,5 +1,25 @@
 **The impact of periodontal disease prevalence scenarios on the costs and prevalence of dementia in England: a modelling study**
 
+Edward Coote, Dr Nitesh Patel, Dr Rajesh Vijayanarayanan
+
+**Abstract**
+
+**Background**
+
+Periodontal disease (PD) is a prevalent modifiable dementia risk factor that is becoming increasingly established with increased dementia incidence. At least 50% of over-65 year olds in England are affected by irreversible PD, and dementia-related costs are projected to rise substantially. Understanding the potential impact of PD prevalence changes on future dementia burden is key for healthcare planning and intervention risk factor prevention.
+
+**Methods**
+
+We developed an individual-level microsimulation model simulating the England population aged 65 and older from 2024 to 2040 (yearly timesteps). We incorporated increasing dementia severity stages, care setting transitions and six modifiable risk factors alongside APOE ε4 carrier status. Age-related dementia onset was driven by a parametric age-scaled hazard. Individual risk factor hazard ratios (HR) were applied multiplicatively. We estimated dementia incidence, prevalence, formal and informal care costs, and quality-adjusted life years (QALYs) under three PD prevalence scenarios (25%, 50% baseline, 75%). Our sensitivity analysis included probabilistic sensitivity analysis (PSA) and deterministic one-way sensitivity analysis on the PD-dementia onset HR.
+
+**Results**
+
+At 50% PD prevalence, cumulative dementia incidence totalled 2.80 million cases over 2024–2040, with prevalence rising from 7.95% to 10.14%. Reducing PD prevalence to 25% prevented approximately 115,000 incident cases (4.1% reduction) and generated cumulative cost savings of £19.7 billion (£10.9bn formal; £8.8bn informal). Each percentage point reduction in PD prevalence was associated with approximately 678 fewer annual dementia onsets and £46 million in annual savings. Population QALYs varied by less than 0.2% across scenarios. Probabilistic sensitivity analysis confirmed robustness across all outcomes (coefficient of variation 5.2%–10.4%).
+
+**Conclusions**
+
+Reductions in PD prevalence, if the observed association with dementia is causal, could yield substantial reductions in dementia incidence and associated costs in England. PD functions as a weak but highly prevalent risk factor, where population-level benefits derive from the large exposed population rather than strong individual risk.
+
 **Introduction**
 
 The burden of periodontal diseases (PD) in England is substantial. NHS Dental estimates that at least 50% of the UK have some level of severe periodontal disease (PD), although this is likely to be an underestimate [1]. Globally, there was an estimated 50% increase in oral disease cases between 1990 and 2019, which was higher than the 45% population growth over the period [2]. This trend is expected to increase in high-income countries as the ageing population results in individuals living longer with chronic diseases [3]. Estimations using multi-state population models for periodontal pocketing in the UK project an 8.7% increase from 2020 to 2050, with severe pocketing increasing by 56.7% [4]. 
@@ -160,6 +180,8 @@ Using a per-capita basis, cohort QALYs averaged 0.74 per person per year with le
 This study has several strengths. By using an individual-level microsimulation model we are able to more accurately capture heterogeneity in dementia progression and associated care patterns than aggregate cohort models. This is especially true for capturing competing risks factors, as we have incorporated multiple established dementia risk factors, alongside PD. This avoids the overestimation of PD’s isolated effect. A key strength is our use of recent ONS population projections (from 2023), 2024 cost estimates, and dementia late stage onset HRs from a large national cohort study (Biobank) with no dementia controlled at baseline [32]. We have based our model structure on the English population. However, given our use of HRs and prevalences from the UK Biobank our model is likely to be generalisable to the whole of the UK, given re-initialisation of baseline population to the specific country or region. 
 
 **Conclusion**
+
+PD's contribution to the dementia burden in over 65 year olds in England derives from its high population prevalence rather than strong individual-level risk. The deteriorating oral health profile of England, which includes declining dental appointment attendance and worsening periodontal outcomes, makes our findings key in disease intervention planning. Our results support the case for including PD within the established modifiable dementia risk factor frameworks, especially due to the absence of individual-level interventions in England that target these at risk populations. Given the best available evidence, we estimate that halving PD prevalence to 25% could prevent approximately 115,000 dementia cases and save £19.7 billion over 2024–2040. The results of our sensitivity analysis show that the economic and health impacts are substantial across PD-dementia onset magnitudes, conditional on the observed PD-dementia association being causal. Given this, future research needs to include prospective studies and intervention trials with long follow-up to establish the true size of this causal effect. The advantage of open source microsimulation models such as this one is that they can be easily updated as new evidence arises.
 
 **References**
 
