@@ -50,11 +50,13 @@ def main():
 
     results = run_pd_sensitivity_analysis(
         config,
-        population_fraction=0.01,   # Use 1% of population
-        n_replicates=10,            # 10 replicates per parameter value
-        combine_sexes=True,         # Vary both sexes together
-        seed=42,                    # For reproducibility
-        n_jobs=1                    # Use 4 cores (Windows resource limits)
+        population_fraction=1.0,    # Full population for deterministic comparison
+        n_replicates=1,             # Single run per scenario (no replicates)
+        combine_sexes=True,
+        seed=42,                    # Fixed seed for reproducibility across scenarios
+        paired_seeds=True,          # Reuse seed across baseline/low/high
+        prevalence_values=[0.25, 0.50, 0.75],  # Run all prevalence scenarios
+        n_jobs=1                    # Sequential runs
     )
 
     print(f"\nOK Generated {len(results)} result rows")

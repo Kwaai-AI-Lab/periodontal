@@ -15,6 +15,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from joblib import Parallel, delayed
 
+try:
+    # Optional dependency for progress bars; fallback to no-op if unavailable
+    from tqdm.auto import tqdm
+except ImportError:  # pragma: no cover - optional dependency
+    tqdm = None
+
 from IBM_PD_AD_v3 import (
     run_model,
     extract_psa_metrics,
@@ -30,7 +36,11 @@ def run_pd_sensitivity_analysis(
     combine_sexes: bool = True,  # currently unused, kept for API compatibility
     seed: Optional[int] = None,
     n_jobs: Optional[int] = None,
-    prevalence_values: Optional[Iterable[float]] = None  # e.g., [0.25, 0.50, 0.75]
+    prevalence_values: Optional[Iterable[float]] = None,  # e.g., [0.25, 0.50, 0.75]
+    paired_seeds: bool = False,  # If True, reuse the same replicate seeds across baseline/low/high
+    auto_export: bool = True,
+    export_path: Optional[Path] = None,
+    show_progress: bool = True,
 ) -> pd.DataFrame:
     """
     One-way sensitivity analysis for periodontal disease hazard ratio.
@@ -41,7 +51,13 @@ def run_pd_sensitivity_analysis(
     Runs each prevalence in `prevalence_values` (or the base config prevalence if None)
     with 10 replicates on 1% of the population, then scales count metrics back up.
     """
+    def _progress(iterable, *, total=None, desc: Optional[str] = None):
+        if show_progress and tqdm is not None:
+            return tqdm(iterable, total=total, desc=desc, leave=False)
+        return iterable
+
     original_pop = base_config.get('population', 10787479)
+    export_path = Path(export_path) if export_path is not None else Path(__file__).with_name('pd_sensitivity_analysis.xlsx')
     rng = np.random.default_rng(seed)
 
     # Default prevalence list = whatever is in the input config (female value)
@@ -110,9 +126,18 @@ def run_pd_sensitivity_analysis(
         print(f"Parallel jobs: {n_jobs or 'auto-detect'}")
         print()
 
+        # Prepare seeds (optionally paired across scenarios for one-way sensitivity)
+        if paired_seeds and seed is not None:
+            baseline_seeds = [seed + i for i in range(n_replicates)]
+            low_hr_seeds = baseline_seeds
+            high_hr_seeds = baseline_seeds
+        else:
+            baseline_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(n_replicates)]
+            low_hr_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(n_replicates)]
+            high_hr_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(n_replicates)]
+
         # Baseline
         print("Running baseline...")
-        baseline_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(n_replicates)]
         if n_jobs and n_jobs != 1:
             baseline_results = Parallel(n_jobs=n_jobs)(
                 delayed(run_replicate)(working_config, 'baseline', 'baseline', i, s, prevalence)
@@ -120,11 +145,9 @@ def run_pd_sensitivity_analysis(
             )
         else:
             baseline_results = []
-            for i, s in enumerate(baseline_seeds):
-                print(f"  Replicate {i+1}/{n_replicates}", end='\r')
+            for i, s in enumerate(_progress(baseline_seeds, total=n_replicates, desc="Baseline")):
                 baseline_results.append(run_replicate(
                     working_config, 'baseline', 'baseline', i, s, prevalence))
-            print()
         results_list.extend(baseline_results)
         baseline_mean = pd.DataFrame(baseline_results)['total_qalys_combined'].mean()
         print(f"  Baseline mean QALYs: {baseline_mean:,.0f}\n")
@@ -134,7 +157,7 @@ def run_pd_sensitivity_analysis(
         for value_type, hr_value in [('low', parameters['onset_hr'][0]),
                                      ('high', parameters['onset_hr'][1])]:
             test_config = set_pd_hr(working_config, onset_hr=hr_value)
-            rep_seeds = [int(rng.integers(0, 2**32 - 1)) for _ in range(n_replicates)]
+            rep_seeds = low_hr_seeds if value_type == 'low' else high_hr_seeds
             if n_jobs and n_jobs != 1:
                 reps = Parallel(n_jobs=n_jobs)(
                     delayed(run_replicate)(test_config, 'onset_hr', value_type, i, s, prevalence)
@@ -142,11 +165,10 @@ def run_pd_sensitivity_analysis(
                 )
             else:
                 reps = []
-                for i, s in enumerate(rep_seeds):
-                    print(f"  {value_type.capitalize()}: Replicate {i+1}/{n_replicates}", end='\r')
+                for i, s in enumerate(_progress(rep_seeds, total=n_replicates,
+                                                desc=f"{value_type.capitalize()} HR")):
                     reps.append(run_replicate(
                         test_config, 'onset_hr', value_type, i, s, prevalence))
-                print()
             results_list.extend(reps)
             mean_qalys = pd.DataFrame(reps)['total_qalys_combined'].mean()
             print(f"  {value_type.capitalize()} (HR={hr_value}): {mean_qalys:,.0f} QALYs "
@@ -170,6 +192,8 @@ def run_pd_sensitivity_analysis(
         df[col] = df[col] * scale_factor
 
     print("OK Sensitivity analysis complete!")
+    if auto_export:
+        export_pd_sensitivity_results(df, excel_path=str(export_path))
     print("=" * 70)
     print()
     return df
@@ -209,3 +233,59 @@ def export_pd_sensitivity_results(
         summary.to_excel(writer, sheet_name='Summary')
 
     print(f"OK Exported sensitivity results to {excel_path}")
+
+
+def create_pd_tornado_diagram(
+    results: pd.DataFrame,
+    *,
+    metrics: List[str],
+    save_path: Optional[str] = None,
+    title: Optional[str] = None,
+    show: bool = True
+) -> None:
+    """
+    Create horizontal tornado diagrams for the provided metrics.
+
+    Assumes results are produced by run_pd_sensitivity_analysis with
+    value_type in {'baseline', 'low', 'high'} for a single parameter.
+    """
+    if results is None or results.empty:
+        print("No results to plot.")
+        return
+
+    fig, ax = plt.subplots(figsize=(8, max(3, len(metrics) * 1.2)))
+
+    y_positions = np.arange(len(metrics))
+    parameter = results['parameter'].dropna().unique()
+    param_label = parameter[0] if len(parameter) else "Parameter"
+
+    for idx, metric in enumerate(metrics):
+        baseline = results[results['value_type'] == 'baseline'][metric].mean()
+        low = results[results['value_type'] == 'low'][metric].mean()
+        high = results[results['value_type'] == 'high'][metric].mean()
+
+        left = min(low, high)
+        width = abs(high - low)
+
+        ax.barh(idx, width, left=left, height=0.6, color="#6aaed6", edgecolor="k")
+        ax.plot([baseline, baseline], [idx - 0.4, idx + 0.4], color="red", linestyle="--", linewidth=2)
+        ax.text(low, idx, f"{low:,.0f}", va="center", ha="right", fontsize=8)
+        ax.text(high, idx, f"{high:,.0f}", va="center", ha="left", fontsize=8)
+
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(metrics)
+    ax.set_xlabel("Outcome value")
+    plot_title = title or f"Tornado Diagram - {param_label}"
+    ax.set_title(plot_title)
+    ax.grid(True, axis="x", linestyle=":", alpha=0.6)
+    fig.tight_layout()
+
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(save_path, dpi=300, bbox_inches="tight")
+        print(f"OK Tornado diagram saved to {save_path}")
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)

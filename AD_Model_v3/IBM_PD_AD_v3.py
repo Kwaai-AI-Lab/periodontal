@@ -1780,7 +1780,7 @@ general_config = {
             'hazard_ratios': {'onset': {'all': 3.03}},
         },
         'periodontal_disease': {
-            'prevalence': {'female': 0.75, 'male': 0.75},
+            'prevalence': {'female': 0.50, 'male': 0.50},
             'hazard_ratios': {'onset': {'all': 1.21}},
         },
     },
@@ -1892,7 +1892,7 @@ RISK_FACTOR_HR_INTERVALS: Dict[str, Dict[str, Dict[str, Tuple[float, float, floa
     'social_isolation':         {'onset': {'all': (1.34, 1.28, 1.41)}},
     'diabetes':                 {'onset': {'all': (2.06, 1.92, 2.22)},},
     'air_pollution':            {'onset': {'all': (1.27, 1.19, 1.35)}},
-    'APOE_e4_carrier':          {'onset': {'all': (3.20, 2.88, 3.19)}},
+    'APOE_e4_carrier':          {'onset': {'all': (3.02, 2.88, 3.19)}},
     'periodontal_disease':      {'onset': {'all': (1.21, 1.07, 1.38)}},
 }
 
@@ -4350,11 +4350,13 @@ def _with_scaled_population_and_entrants(base_config: dict,
                 op['entrants_per_year'] = max(0, scaled)
 
         overrides = cfg.get('initial_summary_overrides')
-        if isinstance(overrides, dict) and 'entrants' in overrides:
-            base_entrants = overrides.get('entrants')
-            if isinstance(base_entrants, (int, float)):
-                scaled = int(round(base_entrants * ratio))
-                overrides['entrants'] = max(0, scaled)
+        if isinstance(overrides, dict):
+            for key in ('entrants', 'incident_onsets', 'deaths'):
+                if key in overrides:
+                    base_val = overrides.get(key)
+                    if isinstance(base_val, (int, float)):
+                        scaled = int(round(base_val * ratio))
+                        overrides[key] = max(0, scaled)
 
     return cfg
 

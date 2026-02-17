@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(python external_validation.py:*)",
-      "Bash(python combine_hazard_ratios.py:*)"
+      "Bash(python combine_hazard_ratios.py:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
