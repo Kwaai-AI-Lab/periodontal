@@ -1,0 +1,13 @@
+Converting AD_Model_v3\AD_FullText_v3.docx to AD_FullText_v3.md...
+Images will be saved to: images
+
+Extracting images...
+  [OK] Extracted 4 images
+
+Converting content...
+  [OK] Processed 171 paragraphs
+  [OK] Converted 5 tables
+
+[OK] Conversion complete!
+  Output: AD_FullText_v3.md
+  Images: images/
