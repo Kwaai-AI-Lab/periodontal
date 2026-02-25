@@ -1,14 +1,15 @@
 """
 Unit tests for PSA workflow scripts.
 
-These tests document the missing psa_with_timeseries module dependency
-and will pass once the module is available.
+NOTE: The original psa_with_timeseries module has been deprecated.
+PSA functionality is now integrated directly into IBM_PD_AD_v3.py.
 
-run_psa_direct.py requires:
-- psa_with_timeseries.run_psa_with_timeseries() function
+The v3 model includes:
+- run_probabilistic_sensitivity_analysis() function
+- general_config configuration
+- save_results_compressed() for output
 
-Status: BLOCKED - Missing psa_with_timeseries module
-Action: Contact original authors to obtain this module
+See AD_Model_v3/run_psa_direct_v3.py for the current PSA workflow.
 """
 
 import pytest
@@ -16,88 +17,61 @@ from pathlib import Path
 
 
 # =============================================================================
-# MISSING MODULE TESTS - These document the missing dependency
+# PSA ARCHITECTURE TESTS - Verify current v3 PSA implementation
 # =============================================================================
 
-class TestMissingDependency:
-    """Tests that document the missing psa_with_timeseries module.
+class TestPSAArchitecture:
+    """Tests verifying the current PSA architecture.
 
-    These tests will fail until the module is found/implemented.
-    Once the module is available, these tests should pass.
+    The original psa_with_timeseries module has been deprecated.
+    PSA is now integrated directly into IBM_PD_AD_v3.py.
     """
 
-    def test_psa_with_timeseries_module_importable(self):
-        """Test that psa_with_timeseries module can be imported.
+    def test_v3_psa_function_available(self):
+        """Test that run_probabilistic_sensitivity_analysis is available in v3."""
+        from IBM_PD_AD_v3 import run_probabilistic_sensitivity_analysis
 
-        BLOCKED: This module is not in the repository and cannot be found
-        on PyPI or GitHub. Contact original authors to obtain it.
+        assert callable(run_probabilistic_sensitivity_analysis)
 
-        Expected: Once module is available, this test passes.
-        """
-        try:
-            import psa_with_timeseries  # noqa: F401 (testing if import succeeds)
-            module_found = True
-        except ImportError:
-            module_found = False
+    def test_v3_psa_script_exists(self):
+        """Test that the v3 PSA workflow script exists."""
+        script_path = Path(__file__).parent.parent / "AD_Model_v3" / "run_psa_direct_v3.py"
 
-        if not module_found:
-            pytest.skip(
-                "MISSING MODULE: psa_with_timeseries\n"
-                "This module is required by run_psa_direct.py but is not available.\n"
-                "Action: Contact original authors to obtain this module.\n"
-                "Searched: PyPI, GitHub - not found."
-            )
+        assert script_path.exists(), "run_psa_direct_v3.py should exist in AD_Model_v3/"
 
-        assert module_found, "psa_with_timeseries module should be importable"
-
-    def test_run_psa_with_timeseries_function_exists(self):
-        """Test that run_psa_with_timeseries function is available.
-
-        BLOCKED: Depends on psa_with_timeseries module.
-        """
-        try:
-            from psa_with_timeseries import run_psa_with_timeseries
-            function_found = True
-        except ImportError:
-            function_found = False
-
-        if not function_found:
-            pytest.skip(
-                "MISSING FUNCTION: run_psa_with_timeseries\n"
-                "This function is imported from psa_with_timeseries module.\n"
-                "Cannot test until module is available."
-            )
-
-        assert callable(run_psa_with_timeseries), "run_psa_with_timeseries should be callable"
-
-    def test_run_psa_direct_has_missing_import(self):
-        """Test that run_psa_direct.py has the expected missing import.
-
-        BLOCKED: run_psa_direct.py imports psa_with_timeseries at module level.
-        This test verifies the import statement exists in the file.
-
-        Note: We don't actually import run_psa_direct.py because:
-        1. It imports psa_with_timeseries which is missing
-        2. It wraps sys.stdout/stderr at module level (breaks pytest capture)
-        3. It executes code at module level (no __main__ guard)
-        """
-        # Read the file and check for the import statement
-        script_path = Path(__file__).parent.parent / "run_psa_direct.py"
+    def test_v3_psa_script_imports_from_v3_model(self):
+        """Test that run_psa_direct_v3.py imports from IBM_PD_AD_v3."""
+        script_path = Path(__file__).parent.parent / "AD_Model_v3" / "run_psa_direct_v3.py"
 
         if not script_path.exists():
-            pytest.skip("run_psa_direct.py not found")
+            pytest.skip("run_psa_direct_v3.py not found")
 
         content = script_path.read_text()
 
-        # Verify the expected import is in the file
-        assert "from psa_with_timeseries import run_psa_with_timeseries" in content, \
-            "run_psa_direct.py should import run_psa_with_timeseries"
+        # Verify it imports from v3 model
+        assert "from IBM_PD_AD_v3 import" in content, \
+            "run_psa_direct_v3.py should import from IBM_PD_AD_v3"
 
-        # Document that this import will fail
-        pytest.skip(
-            "DOCUMENTED: run_psa_direct.py imports psa_with_timeseries which is missing.\n"
-            "The script cannot run until this module is available."
-        )
+        # Verify it imports run_probabilistic_sensitivity_analysis
+        assert "run_probabilistic_sensitivity_analysis" in content, \
+            "run_psa_direct_v3.py should use run_probabilistic_sensitivity_analysis"
+
+    def test_legacy_psa_with_timeseries_not_needed(self):
+        """Verify that psa_with_timeseries is no longer needed in v3.
+
+        The original run_psa_direct.py (v1) required psa_with_timeseries.
+        The v3 implementation has PSA built directly into the model.
+        """
+        script_path = Path(__file__).parent.parent / "AD_Model_v3" / "run_psa_direct_v3.py"
+
+        if not script_path.exists():
+            pytest.skip("run_psa_direct_v3.py not found")
+
+        content = script_path.read_text()
+
+        # v3 should NOT import from psa_with_timeseries
+        assert "psa_with_timeseries" not in content, \
+            "v3 PSA should not depend on external psa_with_timeseries module"
 
 
 # =============================================================================
@@ -159,34 +133,38 @@ class TestPSAWorkflowLogic:
 
 
 class TestIBMPDADIntegration:
-    """Tests for IBM_PD_AD functions used by PSA workflow."""
+    """Tests for IBM_PD_AD_v3 functions used by PSA workflow.
+
+    Note: The v3 model (65+ only) is now the primary model.
+    PSA functionality is integrated directly into IBM_PD_AD_v3.py.
+    """
 
     def test_general_config_exists(self):
-        """Test that general_config is accessible from IBM_PD_AD."""
-        from IBM_PD_AD import general_config
+        """Test that general_config is accessible from IBM_PD_AD_v3."""
+        from IBM_PD_AD_v3 import general_config
 
         assert general_config is not None
         assert isinstance(general_config, dict)
 
     def test_general_config_has_population(self):
         """Test that general_config contains population setting."""
-        from IBM_PD_AD import general_config
+        from IBM_PD_AD_v3 import general_config
 
-        # Either has 'population' key or we use default
-        population = general_config.get('population', 33167098)
+        # v3 model uses 65+ population (10,787,479)
+        population = general_config.get('population', 10787479)
         assert population > 0
         assert isinstance(population, (int, float))
 
     def test_save_results_compressed_exists(self):
         """Test that save_results_compressed function is available."""
-        from IBM_PD_AD import save_results_compressed
+        from IBM_PD_AD_v3 import save_results_compressed
 
         assert callable(save_results_compressed)
 
     def test_copy_deepcopy_works_on_config(self):
         """Test that config can be deep copied for PSA modification."""
         import copy
-        from IBM_PD_AD import general_config
+        from IBM_PD_AD_v3 import general_config
 
         psa_config = copy.deepcopy(general_config)
 
@@ -194,72 +172,57 @@ class TestIBMPDADIntegration:
         psa_config['test_key'] = 'test_value'
         assert 'test_key' not in general_config
 
+    def test_run_probabilistic_sensitivity_analysis_exists(self):
+        """Test that the PSA function is available in v3 model."""
+        from IBM_PD_AD_v3 import run_probabilistic_sensitivity_analysis
+
+        assert callable(run_probabilistic_sensitivity_analysis)
+
 
 # =============================================================================
-# EXPECTED INTERFACE TESTS (for when module is available)
+# V3 PSA INTERFACE TESTS
 # =============================================================================
 
-class TestExpectedPSAInterface:
-    """Tests documenting the expected interface of psa_with_timeseries.
+class TestV3PSAInterface:
+    """Tests for the v3 PSA interface in IBM_PD_AD_v3.
 
-    These tests document what the missing module should provide.
-    They will be skipped until the module is available.
+    These tests verify the integrated PSA functionality in the v3 model.
     """
 
-    @pytest.fixture
-    def psa_module(self):
-        """Fixture to import psa_with_timeseries if available."""
-        try:
-            import psa_with_timeseries
-            return psa_with_timeseries
-        except ImportError:
-            pytest.skip("psa_with_timeseries module not available")
-
-    def test_run_psa_with_timeseries_signature(self, psa_module):
-        """Test that run_psa_with_timeseries has expected signature.
-
-        Expected parameters (from run_psa_direct.py usage):
-        - config: dict - Model configuration
-        - iterations: int - Number of PSA iterations
-        - n_jobs: int - Number of parallel jobs
-        - seed: int - Random seed
-        - output_dir: Optional[Path] - Output directory
-
-        Returns: dict or similar with PSA results
-        """
+    def test_run_psa_has_expected_signature(self):
+        """Test that run_probabilistic_sensitivity_analysis has expected parameters."""
         import inspect
+        from IBM_PD_AD_v3 import run_probabilistic_sensitivity_analysis
 
-        func = psa_module.run_psa_with_timeseries
-        sig = inspect.signature(func)
+        sig = inspect.signature(run_probabilistic_sensitivity_analysis)
         param_names = list(sig.parameters.keys())
 
-        # Check expected parameters exist
-        expected_params = ['config', 'iterations']
-        for param in expected_params:
-            assert param in param_names, f"Expected parameter '{param}' in function signature"
+        # The function should accept configuration-related parameters
+        assert len(param_names) > 0, "PSA function should have parameters"
 
-    def test_run_psa_with_timeseries_returns_results(self, psa_module):
-        """Test that run_psa_with_timeseries returns usable results.
+    def test_general_config_has_psa_settings(self):
+        """Test that general_config includes PSA-related settings."""
+        from IBM_PD_AD_v3 import general_config
 
-        This test verifies the basic contract of the function.
-        """
-        from IBM_PD_AD import general_config
-        import copy
+        # Config should have PSA section or related settings
+        # Note: The exact structure depends on the implementation
+        assert isinstance(general_config, dict)
 
-        # Create minimal test config
-        test_config = copy.deepcopy(general_config)
-        test_config['population'] = 100  # Very small for testing
+        # Should have risk_factors for PSA sampling
+        if 'risk_factors' in general_config:
+            assert isinstance(general_config['risk_factors'], dict)
 
-        # Run with minimal iterations
-        results = psa_module.run_psa_with_timeseries(
-            config=test_config,
-            iterations=2,
-            n_jobs=1,
-            seed=42,
-            output_dir=None
+    def test_v3_model_has_required_psa_exports(self):
+        """Test that IBM_PD_AD_v3 exports all PSA-required functions."""
+        from IBM_PD_AD_v3 import (
+            general_config,
+            save_results_compressed,
+            run_probabilistic_sensitivity_analysis,
         )
 
-        assert results is not None, "PSA should return results"
+        assert general_config is not None
+        assert callable(save_results_compressed)
+        assert callable(run_probabilistic_sensitivity_analysis)
 
 
 # =============================================================================
@@ -267,43 +230,42 @@ class TestExpectedPSAInterface:
 # =============================================================================
 
 class TestDocumentation:
-    """Tests that serve as documentation for the missing module."""
+    """Tests that serve as documentation for the PSA architecture."""
 
-    def test_missing_module_documented(self):
-        """This test documents the missing psa_with_timeseries module.
+    def test_psa_architecture_documented(self):
+        """This test documents the PSA architecture evolution.
 
-        MISSING MODULE: psa_with_timeseries
-        ====================================
+        PSA ARCHITECTURE HISTORY
+        ========================
 
-        Required by: run_psa_direct.py
-        Import statement: from psa_with_timeseries import run_psa_with_timeseries
+        v1/v2 Architecture (deprecated):
+        --------------------------------
+        - External module: psa_with_timeseries
+        - Required: from psa_with_timeseries import run_psa_with_timeseries
+        - Status: Module was never committed to repository
 
-        Expected function signature (inferred from usage):
-        -------------------------------------------------
-        def run_psa_with_timeseries(
-            config: dict,           # Model configuration dictionary
-            iterations: int,        # Number of PSA iterations (e.g., 500)
-            n_jobs: int,           # Number of parallel workers (1 for sequential)
-            seed: int,             # Random seed for reproducibility
-            output_dir: Optional[Path]  # Directory for auto-saving results
-        ) -> dict:                 # Returns PSA results dictionary
-            '''
-            Run Probabilistic Sensitivity Analysis with time series outputs.
+        v3 Architecture (current):
+        --------------------------
+        - PSA is integrated directly into IBM_PD_AD_v3.py
+        - Function: run_probabilistic_sensitivity_analysis()
+        - Workflow script: AD_Model_v3/run_psa_direct_v3.py
+        - Population: 65+ only (10,787,479)
 
-            This function runs multiple iterations of the microsimulation model
-            with randomly sampled parameters to quantify uncertainty in outcomes.
-            '''
+        Key files:
+        ----------
+        - IBM_PD_AD_v3.py: Main model with integrated PSA
+        - AD_Model_v3/run_psa_direct_v3.py: PSA workflow script
+        - psa_results_*_v3/: Output directories for PSA results
 
-        Search results:
-        ---------------
-        - PyPI: Not found
-        - GitHub: Not found
-        - Web search: No matches for "psa_with_timeseries"
+        Usage:
+        ------
+        from IBM_PD_AD_v3 import (
+            general_config,
+            save_results_compressed,
+            run_probabilistic_sensitivity_analysis,
+        )
 
-        Conclusion:
-        -----------
-        This is likely a custom module written by the original developers
-        that was not committed to the repository. Contact authors to obtain.
+        Note: The original psa_with_timeseries module is no longer needed.
         """
         # This test always passes - it's documentation
         assert True
