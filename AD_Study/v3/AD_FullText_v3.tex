@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{makecell}
 \usepackage{longtable}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{setspace}
@@ -66,7 +67,16 @@ Dementia in our model is split in five stages; cognitively normal, mild, moderat
 
 \subsubsection{Equation 1: Dementia onset formula}
 
-The mean time in each dementia stage has been collected from \cite{ref27}. This provides a constant hazard (exponential assumptions) for the effect that time in a dementia stage has on disease progression. Initial dementia stage was set from a previously published report \cite{ref26}. We used a parametric proportional hazards age effect to scale the increasing effects that age has on dementia onset. This provides a continuous increase in risk with age rather than discrete banding, as seen in longitudinal studies of dementia incidence \cite{ref28}. We calculated the relevant $\beta$ for the per-year log-hazard slope increase of stage transitions \cite{ref29,ref30,ref31}. Risk factor hazard ratios were applied to dementia onset. Onset from cognitively normal is driven by a baseline annual onset probability (converted to a hazard), then scaled by a parametric age effect and individual risk-factor hazard ratios (Equation 1). Full details of our model mechanisms are provided in the supplementary information.
+The mean time in each dementia stage has been collected from \cite{ref27}. This provides a constant hazard (exponential assumptions) for the effect that time in a dementia stage has on disease progression. Initial dementia stage was set from a previously published report \cite{ref26}. We used a parametric proportional hazards age effect to scale the increasing effects that age has on dementia onset. This provides a continuous increase in risk with age rather than discrete banding, as seen in longitudinal studies of dementia incidence \cite{ref28}. We calculated the relevant $\beta$ for the per-year log-hazard slope increase of stage transitions \cite{ref29,ref30,ref31}. Risk factor hazard ratios were applied to dementia onset. Onset from cognitively normal is driven by a baseline annual onset probability (converted to a hazard), then scaled by a parametric age effect and individual risk-factor hazard ratios (Equation 1):
+
+\begin{equation}
+\label{eq:dementia_onset}
+h_{\text{onset}}(t, \text{age}) = h_0(t) \times \exp(\beta \times \text{age}) \times \prod_{i} \text{HR}_i
+\end{equation}
+
+\noindent where $h_{\text{onset}}(t, \text{age})$ is the hazard of dementia onset at time $t$ and age; $h_0(t)$ is the baseline annual onset hazard; $\beta$ is the age scaling coefficient; and $\text{HR}_i$ represents the hazard ratio for each risk factor $i$ present in the individual.
+
+Full details of our model mechanisms are provided in the supplementary information.
 
 \subsection{Risk factors}
 
@@ -128,9 +138,9 @@ Differences in dementia incidence and prevalence over time were estimated under 
 
 \subsection{Sensitivity analysis}
 
-We conducted probabilistic sensitivity analysis (PSA) with 500 Monte Carlo iterations for 1\% of the target population ($n = 107{,}874$), sampling uncertain parameters from probability distributions (sampling costs with the gamma distribution, utilities and probabilities with beta, and risk HRs with lognormal from CIs; relative SD = 10\%) \cite{ref41}. The outcomes were then scaled back up by a factor of 100. This was due to the computational strain of sampling for the full population. Results are reported as means with 95\% confidence intervals.
+We conducted probabilistic sensitivity analysis (PSA) with 500 Monte Carlo iterations for 1\% of the target population ($n = 107{,}874$), sampling uncertain parameters from probability distributions (sampling costs with the gamma distribution, utilities and probabilities with beta, and risk HRs with lognormal from CIs; relative SD = 10\%) \cite{ref41}. The outcomes were then scaled back up by a factor of 100. This was due to the computational strain of sampling for the full population. Results are reported as means with 95\% confidence intervals. Coefficients of variation ((standard deviation / mean)*100) are also reported.
 
-Deterministic one-way sensitivity analysis was conducted to specifically address the uncertainty surrounding PD's impact on dementia onset using the published 95\% CI bounds for PD HRs (1.07--1.38 for onset). As with our PSA, the runs used 1\% of the total population with 10 independent model runs per PD prevalence due to computational feasibility. Outputs were then scaled up to full-cohort equivalents.
+Deterministic one-way sensitivity analysis was conducted to specifically address the uncertainty surrounding PD's impact on dementia onset using the published 95\% CI bounds for PD HRs (1.07--1.38 for onset). We used 100\% of the total population, with each lower and upper bound of the HR used for each PD prevalence run.
 
 \section{Results}
 
@@ -202,7 +212,7 @@ Our PSA results demonstrate the stability of our base case results across all th
 
 \begin{table}[htbp]
 \centering
-\caption{Summary of cumulative PSA results}
+\caption{Summary of cumulative PSA results. 2024\pounds\ costs.}
 \label{tab:psa}
 \small
 \begin{tabular}{lccc}
@@ -211,15 +221,34 @@ Our PSA results demonstrate the stability of our base case results across all th
 \midrule
 Total costs (\pounds bn) & 620.6 (516.6--724.4); & 642.2 (529.9--752.9); & 662.6 (544.8--779.6); \\
  & CV: 8.4\% & CV: 8.6\% & 8.9\% \\
-Total QALYs (mn) & 152.1 (136.2--167.4); & 152.3 (136.6--167.2); & 152.5 (136.6--167.3); \\
- & CV: 5.3\% & CV: 5.2\% & 5.2\% \\
-Incident cases (mn) & 2.8 (2.3--3.3); & 3.0 (2.4--3.5); & 3.1 (2.5--3.6); \\
- & CV: 8.8\% & CV: 9.0\% & 9.4\% \\
+Total QALYs (mn) & 151.9 (136.1--167.2); & 152.2 (136.4--167.3); & 152.4 (136.6--167.4); \\
+ & CV: 5.3\% & CV: 5.3\% & 5.2\% \\
+Incident cases (mn) & 2.7 (2.2--3.2); & 2.8 (2.3--3.3); & 2.9 (2.4--3.5); \\
+ & CV: 9.1\% & CV: 9.3\% & 9.7\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Deterministic one-way sensitivity analysis varying the PD-dementia onset HR across its confidence interval (1.07--1.38) showed proportional changes in dementia incidence and costs, confirming the linear relationship between PD prevalence and dementia outcomes.
+The results of our one-way sensitivity analysis are summarised in Table \ref{tab:oneway} (full results in Supplementary Material, Table XXX). Using the lower HR reduced total costs, caregiver QALYs, and incident dementia onsets by 8\%--13\% across scenarios. Total population QALYs were largely insensitive to HR variation, changing by only $\pm$3\% across all scenarios. All results behaved as expected, except the fall in total incident onsets under 25\% PD prevalence when the upper bound HR was used. For all other outputs, using the upper HR led to total costs falling by 1\%--5\% and incident onsets increasing by up to 3\% under the 75\% PD prevalence scenario.
+
+\begin{table}[htbp]
+\centering
+\caption{One-way sensitivity results from varying periodontal disease-dementia onset HR. * = Not including caregiver QALYs. All costs are in 2024\pounds.}
+\label{tab:oneway}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+\textbf{PD prevalence} & \textbf{HR Used} & \makecell{\textbf{Total Costs} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total population} \\ \textbf{QALYs*} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total caregiver} \\ \textbf{QALYs} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total Incident} \\ \textbf{Onsets} \\ \textbf{(\% change from} \\ \textbf{baseline)}} \\
+\midrule
+75\% & High (1.38) & \pounds643,958,973,993.60 ($-1$) & 136,230,776.09 ($-3$) & 10,981,842.40 (1) & 3,087,083 (3) \\
+ & Low (1.07) & \pounds564,567,763,775.41 ($-13$) & 136,915,148.84 ($-3$) & 9,545,927.86 ($-12$) & 2,621,631 ($-13$) \\
+50\% & High (1.38) & \pounds611,051,531,957.90 ($-3$) & 136,513,710.72 ($-3$) & 10,394,266.97 ($-1$) & 2,894,042 (0) \\
+ & Low (1.07) & \pounds558,137,902,469.89 ($-11$) & 136,968,559.56 ($-3$) & 9,430,100.22 ($-11$) & 2,582,837 ($-11$) \\
+25\% & High (1.38) & \pounds578,289,719,287.51 ($-5$) & 136,784,210.03 ($-3$) & 9,799,130.70 ($-4$) & 2,701,735 ($-3$) \\
+ & Low (1.07) & \pounds551,576,202,882.79 ($-9$) & 137,010,344.18 ($-3$) & 9,312,173.99 ($-9$) & 2,544,945 ($-8$) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Discussion}
 
@@ -250,6 +279,52 @@ This study has several strengths. By using an individual-level microsimulation m
 \section{Conclusion}
 
 PD's contribution to the dementia burden in over 65 year olds in England derives from its high population prevalence rather than strong individual-level risk. The deteriorating oral health profile of England, which includes declining dental appointment attendance and worsening periodontal outcomes, makes our findings key in disease intervention planning. Our results support the case for including PD within the established modifiable dementia risk factor frameworks, especially due to the absence of individual-level interventions in England that target these at risk populations. Given the best available evidence, we estimate that halving PD prevalence to 25\% could prevent approximately 115,000 dementia cases and save \pounds19.7 billion over 2024--2040. The results of our sensitivity analysis show that the economic and health impacts are substantial across PD-dementia onset magnitudes, conditional on the observed PD-dementia association being causal. Given this, future research needs to include prospective studies and intervention trials with long follow-up to establish the true size of this causal effect. The advantage of open source microsimulation models such as this one is that they can be easily updated as new evidence arises.
+
+\section*{Author information}
+% Add author affiliations and contact information here
+% Example:
+% Edward Coote$^{1,*}$, Dr Nitesh Patel$^{2}$, Dr Rajesh Vijayanarayanan$^{3}$
+%
+% $^{1}$Department/Institution, City, Country
+% $^{2}$Department/Institution, City, Country
+% $^{3}$Department/Institution, City, Country
+%
+% $^{*}$Corresponding author: email@example.com
+
+\section*{Keywords}
+% Add 3-5 keywords here
+% Suggested: Periodontal disease; Dementia; Microsimulation; Cost-effectiveness; Risk factors; Public health
+
+\section*{Statements \& Declarations}
+
+\subsection*{Funding}
+% Declare any funding sources here
+% Example: This work was supported by [funding agency] under grant [number].
+% Or: No funding was received for conducting this study.
+
+\subsection*{Competing Interests}
+% Declare any competing interests here
+% Example: The authors have no relevant financial or non-financial interests to disclose.
+
+\subsection*{Author Contributions}
+% Describe each author's contribution here
+% Example:
+% Edward Coote: Conceptualization, Methodology, Software, Formal analysis, Writing - original draft
+% Dr Nitesh Patel: Supervision, Writing - review \& editing
+% Dr Rajesh Vijayanarayanan: Supervision, Writing - review \& editing
+
+\subsection*{Ethics Approval}
+N/a
+
+\subsection*{Consent to Participate}
+N/a
+
+\subsection*{Consent to Publish}
+N/a
+
+\subsection*{Data Availability}
+% Add data availability statement here
+% Example: The model code and data used in this study are available at [repository URL].
 
 \begin{thebibliography}{99}
 

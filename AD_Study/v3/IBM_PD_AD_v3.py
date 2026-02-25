@@ -290,38 +290,7 @@ general_config = {
             "annual_rate": 0.0059088616,
             "reference_year": 2023,
         },
-        "fixed_entry_age": None,   # set to None to enable banded entrant ages
-        # entrant age-bands scale relative to baseline weights by milestone year
-        "age_band_multiplier_schedule": {
-            2025: {
-                (65, 69): 1.05,
-                (70, 74): 0.99,
-                (75, 79): 1.03,
-                (80, 84): 1.09,
-                (85, 100): 1.04,
-            },
-            2030: {
-                (65, 69): 1.21,
-                (70, 74): 1.09,
-                (75, 79): 0.95,
-                (80, 84): 1.37,
-                (85, 100): 1.21,
-            },
-            2035: {
-                (65, 69): 1.23,
-                (70, 74): 1.26,
-                (75, 79): 1.06,
-                (80, 84): 1.28,
-                (85, 100): 1.52,
-            },
-            2040: {
-                (65, 69): 1.16,
-                (70, 74): 1.29,
-                (75, 79): 1.23,
-                (80, 84): 1.44,
-                (85, 100): 1.62,
-            },
-        },
+        "fixed_entry_age": 65,   # All new entrants enter at age 65 (realistic population inflow)
         "sex_distribution": None      # e.g. {"female":0.52,"male":0.48}
     },
 
@@ -6086,22 +6055,30 @@ if __name__ == "__main__":
             show_plots=False
         )
 
-    plot_ad_prevalence(model_results, show=True)
-    plot_ad_incidence(model_results, show=True)
-    plot_age_specific_ad_cases(model_results, show=True)
-    plot_dementia_prevalence_by_stage(model_results, show=True)
-    plot_survival_curve(model_results, show=True)
-    plot_survival_by_baseline_stage(model_results, show=True)
-    plot_baseline_age_hist(model_results, show=True)
-    plot_age_at_death_hist(model_results, show=True)
-    plot_costs_per_person_over_time(model_results, show=True)
-    plot_qalys_per_person_over_time(model_results, show=True)
-    plot_lifetime_risk_by_entry_age(model_results, show=True)
-    plot_onset_hazard_vs_age_from_base_prob(general_config, show=True)
-    plot_onset_probability_vs_age_from_base_prob(general_config, show=True)
+    # PLOTS DISABLED: Use generate_figures_2_3_4_from_model.py to create publication figures
+    # The following plots are commented out to avoid generating unnecessary charts during batch processing.
+    # All data needed for figures is exported to Excel (see export_results_to_excel below).
+    # To re-enable plots for manual runs, uncomment the lines below:
 
+    # plot_ad_prevalence(model_results, show=True)
+    # plot_ad_incidence(model_results, show=True)
+    # plot_age_specific_ad_cases(model_results, show=True)
+    # plot_dementia_prevalence_by_stage(model_results, show=True)
+    # plot_survival_curve(model_results, show=True)
+    # plot_survival_by_baseline_stage(model_results, show=True)
+    # plot_baseline_age_hist(model_results, show=True)
+    # plot_age_at_death_hist(model_results, show=True)
+    # plot_costs_per_person_over_time(model_results, show=True)
+    # plot_qalys_per_person_over_time(model_results, show=True)
+    # plot_lifetime_risk_by_entry_age(model_results, show=True)
+    # plot_onset_hazard_vs_age_from_base_prob(general_config, show=True)
+    # plot_onset_probability_vs_age_from_base_prob(general_config, show=True)
+
+    # Export all model results to Excel for journal reproducibility
+    # This includes: summary data, yearly flows, risk factor prevalence, and severity distribution
     excel_output_path = Path("results") / "Baseline_Model.xlsx"
     excel_output_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"\nExporting results to Excel: {excel_output_path}")
 
     def _save_fallback(exc: Exception):
         fallback_path = excel_output_path.with_name(f"{excel_output_path.stem}_export_failed.pkl.gz")

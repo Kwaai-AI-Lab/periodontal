@@ -48,10 +48,13 @@ scaled_population = int(original_population * SCALE_FACTOR)
 # MAIN LOOP: Run PSA for each prevalence level
 # ============================================================================
 
+# Ensure we always save to the same location regardless of where script is run from
+SCRIPT_DIR = Path(__file__).parent.absolute()
+
 for prevalence_idx, prevalence in enumerate(PREVALENCE_LEVELS, 1):
 
     prevalence_pct = int(prevalence * 100)
-    OUTPUT_DIR = Path(f'psa_results_{prevalence_pct}_v3')  # v3 suffix for 65+ only model
+    OUTPUT_DIR = SCRIPT_DIR / f'psa_results_{prevalence_pct}_v3'  # v3 suffix for 65+ only model
     OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
     print("\n" + "#"*80)
