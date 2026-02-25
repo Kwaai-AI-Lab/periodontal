@@ -5,14 +5,22 @@ Tests focus on:
 - Data generation and transformations
 - CEAC calculation logic
 - Error handling
+
+Note: generate_cvd_figures.py has been moved to CVD_Study/ directory.
 """
 
-import numpy as np
-import pandas as pd
-from unittest.mock import patch, MagicMock
+import sys
+from pathlib import Path
+
+# Add CVD_Study directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent / 'CVD_Study'))
+
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+from unittest.mock import patch, MagicMock  # noqa: E402
 
 # Import module and constants
-from generate_cvd_figures import (
+from generate_cvd_figures import (  # noqa: E402
     BASE_CASE_ICER,
     NICE_THRESHOLD_LOW,
     NICE_THRESHOLD_HIGH,
