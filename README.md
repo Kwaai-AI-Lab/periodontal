@@ -1,6 +1,6 @@
 # Periodontal Health Impact Simulator
 
-![Cost-Effectiveness Plane: NSPT vs. No Treatment (10,000 PSA iterations)](AD_Model_v3/plots/figure2_ce_plane.png)
+![Cost-Effectiveness Plane: NSPT vs. No Treatment (10,000 PSA iterations)](AD_Study/v3/plots/figure2_ce_plane.png)
 
 A research initiative to quantify the systemic health impacts of periodontal disease through health economic modeling.
 
@@ -39,6 +39,7 @@ This repository contains two major health economic modeling projects examining t
 | `images_CVD/` | Publication-ready figures |
 | `EXCEL_MODEL_EXECUTION_GUIDE.md` | Model execution instructions |
 | `CONTRIBUTING.md` | Contributor guidelines |
+| `tests/` | CVD figure generation tests (26 tests) |
 
 ---
 
@@ -58,7 +59,7 @@ This repository contains two major health economic modeling projects examining t
 
 ### Model Versions
 
-**v2** — [`AD_Model_v2/`](AD_Model_v2/)
+**v2** — [`AD_Study/v2/`](AD_Study/v2/)
 
 | File | Description |
 |------|-------------|
@@ -67,7 +68,7 @@ This repository contains two major health economic modeling projects examining t
 | `AD_Microsimulation_results/` | PSA results (25%, 50%, 75% scenarios) |
 | `run_psa_direct_v2.py` | PSA runner |
 
-**v3** — [`AD_Model_v3/`](AD_Model_v3/) *(current)*
+**v3** — [`AD_Study/v3/`](AD_Study/v3/) *(current)*
 
 | File | Description |
 |------|-------------|
@@ -80,6 +81,7 @@ This repository contains two major health economic modeling projects examining t
 | `run_psa_direct_v3.py` | PSA runner |
 | `psa_results_25_v3/` `psa_results_50_v3/` `psa_results_75_v3/` | PSA outputs |
 | `plots/` | Generated figures |
+| `tests/` | AD microsimulation tests (97 tests) + PSA workflow tests (14 tests) |
 
 ---
 
@@ -92,17 +94,13 @@ periodontal/
 ├── pytest.ini
 ├── requirements.txt
 ├── requirements-dev.txt
-├── AD_Model_v2/                    # AD microsimulation v2
-├── AD_Model_v3/                    # AD microsimulation v3 (current)
+├── AD_Study/
+│   ├── v2/                         # AD microsimulation v2
+│   └── v3/                         # AD microsimulation v3 (current)
+│       └── tests/                  # AD model + PSA tests (111 tests)
 ├── CVD_Study/                      # CVD Markov model and manuscript
-├── tests/                          # Unit test suite
-│   ├── test_ibm_pd_ad.py           # AD microsimulation tests (97 tests)
-│   ├── test_cvd_figures.py         # CVD figure generation tests (26 tests)
-│   └── test_psa_workflow.py        # PSA workflow tests (14 tests)
-├── plots/                          # Root-level generated figures
-├── psa_results_25_v3/              # PSA outputs (root-level copies)
-├── psa_results_50_v3/
-└── psa_results_75_v3/
+│   └── tests/                      # CVD figure tests (26 tests)
+└── docs/                           # Project planning documents
 ```
 
 ---
@@ -120,7 +118,7 @@ pytest
 pytest --cov
 
 # Run a specific suite
-pytest tests/test_ibm_pd_ad.py
+pytest AD_Study/v3/tests/test_ibm_pd_ad.py
 ```
 
 **Test suite**: 137 tests — 132 passing, 5 skipped (pending PSA module)
