@@ -5,10 +5,24 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 import numpy as np
+import pandas as pd
 
 
-OUT_DIR = Path("AD_Model_v3/images_regenerated")
+OUT_DIR = Path("AD_Model_v3/images")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+RESULTS_DIR = Path("AD_Model_v3/results")
+
+
+def load_scenario_data():
+    """Load data from all three PD prevalence scenario Excel files."""
+    scenarios = {}
+    for pd_level in [25, 50, 75]:
+        excel_path = RESULTS_DIR / f"Figure_Generation_PD_{pd_level}.xlsx"
+        if not excel_path.exists():
+            raise FileNotFoundError(f"Excel file not found: {excel_path}")
+        scenarios[pd_level] = pd.read_excel(excel_path, sheet_name="Summary")
+    return scenarios
 
 
 def style_axes(ax):
@@ -105,13 +119,28 @@ def figure_1():
     save(fig, "figure_1.png")
 
 
-def figure_2():
-    factors = ["Periodontal Disease", "Hypertension", "Hearing Difficulty", "APOE e4", "Obesity", "Depression", "Diabetes"]
-    general = np.array([49.8, 44.9, 35.8, 24.6, 24.3, 6.6, 4.3])
-    dementia = np.array([53.8, 51.6, 39.6, 46.2, 25.8, 10.9, 7.6])
-    enrichment = np.array([8.1, 14.8, 10.7, 87.7, 6.4, 64.6, 75.9])
+def figure_2(scenarios):
+    # Extract data from year 2040 (last row) of 50% PD baseline scenario
+    df_baseline = scenarios[50]
+    row_2040 = df_baseline[df_baseline['calendar_year'] == 2040].iloc[0]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 6.8), gridspec_kw={"wspace": 0.33})
+    # Map display names to column suffixes
+    risk_factor_map = {
+        "Periodontal Disease": "periodontal_disease",
+        "Hypertension": "hypertension",
+        "Hearing Difficulty": "hearing_difficulty",
+        "APOE e4": "APOE_e4_carrier",
+        "Obesity": "obesity",
+        "Depression": "depression",
+        "Diabetes": "diabetes"
+    }
+
+    factors = list(risk_factor_map.keys())
+    general = np.array([row_2040[f'risk_prev_alive_{risk_factor_map[f]}'] * 100 for f in factors])
+    dementia = np.array([row_2040[f'risk_prev_dementia_{risk_factor_map[f]}'] * 100 for f in factors])
+    enrichment = ((dementia - general) / general) * 100
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13.5, 6.8), gridspec_kw={"wspace": 0.45})
     fig.patch.set_facecolor("#e9e9e9")
     style_axes(ax1)
     style_axes(ax2)
@@ -163,17 +192,21 @@ def figure_2():
     ax2.legend(handles=[Patch(facecolor="#58b980", label="Modifiable"), Patch(facecolor="#9aa7ab", label="Non-modifiable (genetic)")],
                loc="lower right", framealpha=0.9)
 
-    fig.suptitle("Risk Factor Landscape at Current 50% PD Baseline\nEngland, Adults Aged 65+, Year 2040", fontsize=15, weight="bold", y=0.995)
+    # fig.suptitle("Risk Factor Landscape at Current 50% PD Baseline\nEngland, Adults Aged 65+, Year 2040", fontsize=15, weight="bold", y=0.995)
     save(fig, "figure_2.png")
 
 
-def figure_3():
-    years = np.arange(2024, 2041)
+def figure_3(scenarios):
+    # Extract yearly cost data from all three scenarios
+    df_25 = scenarios[25][scenarios[25]['calendar_year'] >= 2024]
+    df_50 = scenarios[50][scenarios[50]['calendar_year'] >= 2024]
+    df_75 = scenarios[75][scenarios[75]['calendar_year'] >= 2024]
 
-    # visually reconstructed from existing figure
-    base50 = np.array([27.0, 30.2, 32.4, 34.0, 35.2, 36.2, 37.0, 37.8, 38.5, 39.3, 40.1, 40.9, 41.7, 42.8, 43.6, 43.9, 44.2])
-    low25 = np.array([26.8, 29.8, 32.0, 33.4, 34.4, 35.2, 35.9, 36.6, 37.3, 38.0, 38.7, 39.5, 40.2, 41.1, 41.8, 42.1, 42.3])
-    high75 = np.array([27.1, 30.4, 32.8, 34.5, 35.8, 36.9, 37.7, 38.6, 39.4, 40.2, 41.0, 41.8, 42.4, 43.5, 44.1, 44.4, 44.7])
+    years = df_50['calendar_year'].values
+    # Convert to billions
+    low25 = (df_25['year_costs_societal'].values / 1e9)
+    base50 = (df_50['year_costs_societal'].values / 1e9)
+    high75 = (df_75['year_costs_societal'].values / 1e9)
 
     fig, ax = plt.subplots(figsize=(11.5, 6.2))
     fig.patch.set_facecolor("#e9e9e9")
@@ -193,23 +226,29 @@ def figure_3():
     ax.set_yticklabels([f"GBP {t}B" for t in yticks], fontsize=11)
 
     ax.set_xlabel("Year", fontsize=12, weight="bold")
-    ax.set_ylabel("Annual Total Societal Costs (GBP  billions)", fontsize=13, weight="bold")
-    ax.set_title("Annual Dementia Costs by Periodontal Disease Prevalence Scenario\nEngland, Adults Aged 65+, 2024-2040",
-                 fontsize=16, weight="bold", pad=14)
+    ax.set_ylabel("Annual Total Costs (GBP  billions)", fontsize=13, weight="bold")
+    # ax.set_title("Annual Dementia Costs by Periodontal Disease Prevalence Scenario\nEngland, Adults Aged 65+, 2024-2040",
+    #              fontsize=16, weight="bold", pad=14)
     ax.legend(loc="upper left", framealpha=0.95, fancybox=True, shadow=True, fontsize=11)
 
     save(fig, "figure_3.png")
 
 
-def figure_4():
+def figure_4(scenarios):
+    # Select specific years for plotting
     years = np.array([2024, 2027, 2030, 2033, 2036, 2039, 2040])
 
-    # visually reconstructed from existing figure annotations
-    patient_25 = np.array([0.00, 0.003, 0.014, 0.041, 0.080, 0.135, 0.160])
-    patient_75 = np.array([0.00, -0.004, -0.018, -0.048, -0.089, -0.145, -0.170])
+    # Extract cumulative QALY data for selected years
+    df_25 = scenarios[25][scenarios[25]['calendar_year'].isin(years)]
+    df_50 = scenarios[50][scenarios[50]['calendar_year'].isin(years)]
+    df_75 = scenarios[75][scenarios[75]['calendar_year'].isin(years)]
 
-    caregiver_25 = np.array([0.00, -0.050, -0.118, -0.188, -0.260, -0.332, -0.360])
-    caregiver_75 = np.array([0.00, 0.045, 0.108, 0.178, 0.252, 0.328, 0.350])
+    # Calculate differences from baseline (50% scenario), convert to millions
+    patient_25 = (df_25['total_qalys_patient'].values - df_50['total_qalys_patient'].values) / 1e6
+    patient_75 = (df_75['total_qalys_patient'].values - df_50['total_qalys_patient'].values) / 1e6
+
+    caregiver_25 = (df_25['total_qalys_caregiver'].values - df_50['total_qalys_caregiver'].values) / 1e6
+    caregiver_75 = (df_75['total_qalys_caregiver'].values - df_50['total_qalys_caregiver'].values) / 1e6
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10.6, 7.9), sharex=True)
     fig.patch.set_facecolor("#e9e9e9")
@@ -249,11 +288,11 @@ def figure_4():
              style="italic", ha="center", va="bottom",
              bbox=dict(boxstyle="round", facecolor="#efe3c6", edgecolor="#8e8164", alpha=0.95))
 
-    fig.suptitle("Cumulative QALY Differences from 50% Baseline Over Time\nEngland, Adults Aged 65+, 2024-2040",
-                 fontsize=16, weight="bold", y=0.99)
-    fig.text(0.5, 0.02,
-             "Lower PD prevalence reduces caregiver QALYs (fewer caregivers needed) while patient QALYs remain stable.",
-             ha="center", fontsize=10, style="italic")
+    # fig.suptitle("Cumulative QALY Differences from 50% Baseline Over Time\nEngland, Adults Aged 65+, 2024-2040",
+    #              fontsize=16, weight="bold", y=0.99)
+    # fig.text(0.5, 0.02,
+    #          "Lower PD prevalence reduces caregiver QALYs (fewer caregivers needed) while patient QALYs remain stable.",
+    #          ha="center", fontsize=10, style="italic")
 
     save(fig, "figure_4.png")
 
@@ -266,11 +305,21 @@ def main():
         "figure.facecolor": "#e9e9e9",
     })
 
+    print("Loading data from Excel files...")
+    scenarios = load_scenario_data()
+    print(f"  Loaded PD_25: {len(scenarios[25])} rows")
+    print(f"  Loaded PD_50: {len(scenarios[50])} rows")
+    print(f"  Loaded PD_75: {len(scenarios[75])} rows")
+
+    print("Generating Figure 1 (conceptual diagram)...")
     figure_1()
-    figure_2()
-    figure_3()
-    figure_4()
-    print(f"Saved regenerated figures to: {OUT_DIR}")
+    print("Generating Figure 2 (risk factor prevalence)...")
+    figure_2(scenarios)
+    print("Generating Figure 3 (annual costs)...")
+    figure_3(scenarios)
+    print("Generating Figure 4 (cumulative QALYs)...")
+    figure_4(scenarios)
+    print(f"\nSaved regenerated figures to: {OUT_DIR}")
 
 
 if __name__ == "__main__":

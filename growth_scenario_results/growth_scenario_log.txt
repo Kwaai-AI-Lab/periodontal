@@ -1,0 +1,153 @@
+Growth Scenario Analysis Log - Started 2026-03-11 17:52:05.384932
+================================================================================
+
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] ================================================================================
+[2026-03-11 17:52:05] [INFO] GROWTH SCENARIO ANALYSIS - START
+[2026-03-11 17:52:05] [INFO] ================================================================================
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] This analysis runs the periodontal disease growth scenario based on
+[2026-03-11 17:52:05] [INFO] Elamin & Anash (2023) projections:
+[2026-03-11 17:52:05] [INFO]   - 39.7% relative increase (2020-2050, 30 years)
+[2026-03-11 17:52:05] [INFO]   - Adjusted to 22.5% increase (2023-2040, 17 years)
+[2026-03-11 17:52:05] [INFO]   - Baseline: 50% prevalence in 2023
+[2026-03-11 17:52:05] [INFO]   - Target: 61.25% prevalence in 2040
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] Output structure matches baseline runs for easy comparison:
+[2026-03-11 17:52:05] [INFO]   - Main model: results/Baseline_Model_PD_Growth.xlsx
+[2026-03-11 17:52:05] [INFO]   - PSA: psa_results_growth_v3/PSA_Results_growth.xlsx
+[2026-03-11 17:52:05] [INFO]   - Tornado: pd_sensitivity_analysis_growth.xlsx
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] Configuration: {'seed': 42, 'output_dir': WindowsPath('growth_scenario_results'), 'log_file': 'growth_scenario_log.txt', 'population_fraction': 1.0, 'psa_iterations': 500, 'psa_scale_factor': 0.01, 'tornado_n_replicates': 10, 'tornado_population_fraction': 0.01}
+[2026-03-11 17:52:05] [INFO] Start time: 2026-03-11 17:52:05.384386
+[2026-03-11 17:52:05] [INFO] Output directory: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\growth_scenario_results
+[2026-03-11 17:52:05] [INFO] Log file: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\growth_scenario_results\growth_scenario_log.txt
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] ================================================================================
+[2026-03-11 17:52:05] [INFO] STEP 1: Main Model Run (Growth Scenario)
+[2026-03-11 17:52:05] [INFO] ================================================================================
+[2026-03-11 17:52:05] [INFO] 
+[2026-03-11 17:52:05] [INFO] Periodontal disease prevalence: 50% (2023) → 61.25% (2040)
+[2026-03-11 17:52:05] [INFO] Based on Elamin & Anash (2023): 39.7% increase over 30 years
+[2026-03-11 17:52:05] [INFO] Adjusted to model timeframe: 22.5% increase over 17 years
+[2026-03-11 17:52:06] [INFO] Running model with 10,787,479 individuals...
+[2026-03-11 22:04:11] [INFO]   ✓ Compressed results saved: growth_scenario_results\main_model_run\results_pd_growth.pkl.gz
+[2026-03-11 22:04:12] [INFO]   ✓ Excel export saved: results\Baseline_Model_PD_Growth.xlsx
+[2026-03-11 22:04:12] [INFO] ✓ Step 1 complete!
+[2026-03-11 22:04:12] [INFO] 
+[2026-03-11 22:04:12] [INFO] ================================================================================
+[2026-03-11 22:04:12] [INFO] STEP 2: Probabilistic Sensitivity Analysis (Growth Scenario)
+[2026-03-11 22:04:12] [INFO] ================================================================================
+[2026-03-11 22:04:12] [INFO] 
+[2026-03-11 22:04:12] [INFO] PSA iterations: 500
+[2026-03-11 22:04:12] [INFO] Scale factor: 0.01 (1%)
+[2026-03-11 22:04:12] [INFO] Output directory: c:\Users\EdwardCoote\OneDrive\periodontal\periodontal\AD_Model_v3\psa_results_growth_v3
+[2026-03-11 22:04:12] [INFO] Population configuration:
+[2026-03-11 22:04:12] [INFO]   - Full UK population: 10,787,479
+[2026-03-11 22:04:12] [INFO]   - PSA population (1%): 107,874
+[2026-03-11 22:04:12] [INFO]   - Reduction factor: 100x
+[2026-03-11 22:04:12] [INFO] 
+Starting PSA with 500 iterations...
+[2026-03-11 22:04:12] [INFO]   - Growth scenario enabled (50% → 61.25%)
+[2026-03-11 22:04:12] [INFO]   - Population per iteration: 107,874
+[2026-03-11 22:04:12] [INFO]   - Running sequentially (1 core)
+[2026-03-11 22:04:12] [INFO]   - Estimated time: 3-6 hours
+[2026-03-11 22:04:12] [INFO]   - Progress will be shown below...
+
+[2026-03-12 02:28:17] [INFO] 
+✓ PSA complete for growth scenario!
+[2026-03-12 02:28:17] [INFO] ✓ Duration: 264.1 minutes (4.40 hours)
+[2026-03-12 02:28:17] [INFO] ✓ Results saved to: psa_results_growth.pkl.gz
+[2026-03-12 02:28:17] [INFO] 
+Scaling results to full population...
+[2026-03-12 02:28:17] [INFO] ✓ Scaling complete
+[2026-03-12 02:28:17] [INFO] 
+Exporting to Excel...
+[2026-03-12 02:28:17] [INFO] ✓ Excel file created: PSA_Results_growth.xlsx
+[2026-03-12 02:28:17] [INFO] ✓ Location: c:\Users\EdwardCoote\OneDrive\periodontal\periodontal\AD_Model_v3\psa_results_growth_v3\PSA_Results_growth.xlsx
+[2026-03-12 02:28:17] [INFO] 
+Excel sheets created:
+[2026-03-12 02:28:17] [INFO]   1. Summary_Scaled - Mean and 95% CIs (scaled to full population)
+[2026-03-12 02:28:17] [INFO]   2. Metadata - PSA configuration and methods
+[2026-03-12 02:28:17] [INFO]   3. Key_Results - Main outcomes formatted for manuscript
+[2026-03-12 02:28:17] [INFO]   4. Validation - Methodology validation checks
+[2026-03-12 02:28:17] [INFO]   5. PSA_Draws - Individual iteration results (first 10,000)
+[2026-03-12 02:28:17] [INFO] ✓ Step 2 complete!
+[2026-03-12 02:28:17] [INFO] 
+[2026-03-12 02:28:17] [INFO] ================================================================================
+[2026-03-12 02:28:17] [INFO] STEP 3: One-Way Sensitivity Analysis (Growth Scenario)
+[2026-03-12 02:28:17] [INFO] ================================================================================
+[2026-03-12 02:28:17] [INFO] 
+[2026-03-12 02:28:17] [INFO] Replicates: 10
+[2026-03-12 02:28:17] [INFO] Population fraction: 0.01
+[2026-03-12 02:28:17] [INFO] Varying PD Onset HR (95% CI: 1.07-1.38)
+[2026-03-12 02:28:17] [INFO] 
+Population: 107,874 agents (1.0% of 10,787,479)
+[2026-03-12 02:28:17] [INFO] 
+Running baseline scenario...
+[2026-03-12 02:28:17] [INFO]   Replicate 1/10
+[2026-03-12 02:30:20] [INFO]   Replicate 5/10
+[2026-03-12 02:32:43] [INFO]   Replicate 10/10
+[2026-03-12 02:33:10] [INFO]   Baseline mean QALYs: 1,590,845
+[2026-03-12 02:33:10] [INFO] 
+Running low HR scenario (HR=1.07)...
+[2026-03-12 02:33:10] [INFO]   Replicate 1/10
+[2026-03-12 02:35:00] [INFO]   Replicate 5/10
+[2026-03-12 02:37:14] [INFO]   Replicate 10/10
+[2026-03-12 02:37:40] [INFO]   Low HR mean QALYs: 1,408,559 (Delta=-182,285)
+[2026-03-12 02:37:40] [INFO] 
+Running high HR scenario (HR=1.38)...
+[2026-03-12 02:37:40] [INFO]   Replicate 1/10
+[2026-03-12 02:39:30] [INFO]   Replicate 5/10
+[2026-03-12 02:41:44] [INFO]   Replicate 10/10
+[2026-03-12 02:42:10] [INFO]   High HR mean QALYs: 1,412,287 (Delta=-178,557)
+[2026-03-12 02:42:10] [INFO] 
+Scaling results by factor of 100x...
+[2026-03-12 02:42:10] [INFO] 
+Exporting results to pd_sensitivity_analysis_growth.xlsx...
+[2026-03-12 02:42:10] [INFO] ✓ Tornado results saved: pd_sensitivity_analysis_growth.xlsx
+[2026-03-12 02:42:10] [INFO]   Sheets: Raw_Results, Summary, Metadata
+[2026-03-12 02:42:10] [INFO] ✓ Step 3 complete!
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO] ================================================================================
+[2026-03-12 02:42:10] [INFO] GROWTH SCENARIO ANALYSIS - COMPLETE
+[2026-03-12 02:42:10] [INFO] ================================================================================
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO] End time: 2026-03-12 02:42:10.993174
+[2026-03-12 02:42:10] [INFO] Total duration: 8:50:05.608788
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO] SUMMARY:
+[2026-03-12 02:42:10] [INFO] --------------------------------------------------------------------------------
+[2026-03-12 02:42:10] [INFO]   Step 1: Main Model Run: ✓ SUCCESS
+[2026-03-12 02:42:10] [INFO]   Step 2: PSA: ✓ SUCCESS
+[2026-03-12 02:42:10] [INFO]   Step 3: Tornado Analysis: ✓ SUCCESS
+[2026-03-12 02:42:10] [INFO] --------------------------------------------------------------------------------
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO] OUTPUT FILES:
+[2026-03-12 02:42:10] [INFO]   Main Model:
+[2026-03-12 02:42:10] [INFO]     - results/Baseline_Model_PD_Growth.xlsx
+[2026-03-12 02:42:10] [INFO]     - growth_scenario_results/main_model_run/results_pd_growth.pkl.gz
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO]   PSA:
+[2026-03-12 02:42:10] [INFO]     - psa_results_growth_v3/PSA_Results_growth.xlsx
+[2026-03-12 02:42:10] [INFO]     - psa_results_growth_v3/psa_results_growth.pkl.gz
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO]   Tornado:
+[2026-03-12 02:42:10] [INFO]     - pd_sensitivity_analysis_growth.xlsx
+[2026-03-12 02:42:10] [INFO] 
+[2026-03-12 02:42:10] [INFO] Full log saved to: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\growth_scenario_results\growth_scenario_log.txt
+[2026-03-12 02:42:10] [INFO] Results directory: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\growth_scenario_results
+[2026-03-12 02:42:10] [INFO] 
+✓ ALL STEPS COMPLETED SUCCESSFULLY!
+[2026-03-12 02:42:10] [INFO] 
+NEXT STEPS:
+[2026-03-12 02:42:10] [INFO]   1. Compare growth scenario with baseline (50% stable)
+[2026-03-12 02:42:10] [INFO]      - Baseline: results/Baseline_Model_PD_50.xlsx
+[2026-03-12 02:42:11] [INFO]      - Growth: results/Baseline_Model_PD_Growth.xlsx
+[2026-03-12 02:42:11] [INFO]   2. Compare PSA results
+[2026-03-12 02:42:11] [INFO]      - Baseline: psa_results_50_v3/PSA_Results_50pct.xlsx
+[2026-03-12 02:42:11] [INFO]      - Growth: psa_results_growth_v3/PSA_Results_growth.xlsx
+[2026-03-12 02:42:11] [INFO]   3. Compare tornado results
+[2026-03-12 02:42:11] [INFO]      - Baseline: pd_sensitivity_analysis.xlsx
+[2026-03-12 02:42:11] [INFO]      - Growth: pd_sensitivity_analysis_growth.xlsx
+[2026-03-12 02:42:11] [INFO]   4. Update manuscript with comparative findings

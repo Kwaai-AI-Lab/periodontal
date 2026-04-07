@@ -1,19 +1,21 @@
 """
-Example script to run periodontal disease sensitivity analysis for tornado diagrams.
+One-way sensitivity analysis for periodontal disease hazard ratio - Baseline (50% stable).
 
 This script:
 1. Loads the base configuration
-2. Runs sensitivity analysis on PD onset RR
+2. Runs deterministic sensitivity analysis on PD onset HR (1.07, 1.21, 1.38)
 3. Exports results to Excel (tornado plots disabled - create manually from Excel data)
 
 Note: Automatic tornado plot generation is disabled as plots do not render correctly.
       All data is exported to Excel for manual plotting.
 
-Computational note:
-- Uses 1% of population by default (107,875 agents from base of 10,787,479)
-- Runs 10 replicates per parameter value
-- Total: ~30 model runs (baseline + 1 param × 2 values × 10 reps each)
-- Estimated time: Several hours depending on CPU cores and model complexity
+Analysis approach:
+- Scenario: Baseline (50% stable PD prevalence)
+- Population: Full population (10,787,479 agents)
+- Runs: Single deterministic run per HR value (no replicates)
+- HR values: 1.07 (low), 1.21 (baseline), 1.38 (high)
+- Total: 3 model runs
+- Estimated time: ~3 hours total
 """
 
 # Use the v3 configuration (hazard-ratio based risk factors)
@@ -57,7 +59,7 @@ def main():
         combine_sexes=True,
         seed=42,                    # Fixed seed for reproducibility across scenarios
         paired_seeds=True,          # Reuse seed across baseline/low/high
-        prevalence_values=[0.25, 0.50, 0.75],  # Run all prevalence scenarios
+        prevalence_values=[0.50],   # Baseline scenario: 50% stable prevalence
         n_jobs=1                    # Sequential runs
     )
 

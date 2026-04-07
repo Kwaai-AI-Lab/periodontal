@@ -1,0 +1,92 @@
+Sensitivity Analysis Log - Started 2026-03-16 19:48:26.240629
+================================================================================
+
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] ================================================================================
+[2026-03-16 19:48:26] [INFO] ONE-WAY SENSITIVITY ANALYSES - START
+[2026-03-16 19:48:26] [INFO] ================================================================================
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] This script runs both one-way sensitivity analyses:
+[2026-03-16 19:48:26] [INFO]   1. Baseline scenario (50% stable PD prevalence)
+[2026-03-16 19:48:26] [INFO]   2. Growth scenario (50% → 61.25% PD prevalence)
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] Analysis approach:
+[2026-03-16 19:48:26] [INFO]   - Full population (10,787,479 agents)
+[2026-03-16 19:48:26] [INFO]   - Deterministic (1 run per HR value)
+[2026-03-16 19:48:26] [INFO]   - HR values: 1.07 (low), 1.21 (baseline), 1.38 (high)
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] Configuration: {'seed': 42, 'output_dir': WindowsPath('sensitivity_analysis_results'), 'log_file': 'sensitivity_analysis_log.txt'}
+[2026-03-16 19:48:26] [INFO] Start time: 2026-03-16 19:48:26.240078
+[2026-03-16 19:48:26] [INFO] Log file: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\sensitivity_analysis_results\sensitivity_analysis_log.txt
+[2026-03-16 19:48:26] [INFO] Estimated total time: ~6 hours
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] ================================================================================
+[2026-03-16 19:48:26] [INFO] ANALYSIS 1: Baseline Scenario (50% Stable PD Prevalence)
+[2026-03-16 19:48:26] [INFO] ================================================================================
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-16 19:48:26] [INFO] Approach: Full population, deterministic
+[2026-03-16 19:48:26] [INFO] HR values: 1.07 (low), 1.21 (baseline), 1.38 (high)
+[2026-03-16 19:48:26] [INFO] Estimated time: ~3 hours
+[2026-03-16 19:48:26] [INFO] 
+[2026-03-17 16:48:54] [INFO] ✓ Baseline sensitivity analysis complete!
+[2026-03-17 16:48:54] [INFO] ✓ Results saved to: pd_sensitivity_analysis.xlsx
+[2026-03-17 16:48:54] [INFO]   - 3 scenarios completed
+[2026-03-17 16:48:54] [INFO] 
+[2026-03-17 16:48:54] [INFO] 
+[2026-03-17 16:48:54] [INFO] ================================================================================
+[2026-03-17 16:48:54] [INFO] ANALYSIS 2: Growth Scenario (50% → 61.25% PD Prevalence)
+[2026-03-17 16:48:54] [INFO] ================================================================================
+[2026-03-17 16:48:54] [INFO] 
+[2026-03-17 16:48:54] [INFO] Approach: Full population, deterministic
+[2026-03-17 16:48:54] [INFO] HR values: 1.07 (low), 1.21 (baseline), 1.38 (high)
+[2026-03-17 16:48:54] [INFO] Prevalence: 50% (2023) → 61.25% (2040)
+[2026-03-17 16:48:54] [INFO] Based on: Elamin & Anash (2023) projections
+[2026-03-17 16:48:54] [INFO] Estimated time: ~3 hours
+[2026-03-17 16:48:54] [INFO] 
+[2026-03-17 16:48:54] [INFO] Population: 10,787,479 agents
+[2026-03-17 16:48:54] [INFO] 
+[2026-03-17 16:48:54] [INFO] Running baseline scenario (HR=1.21)...
+[2026-03-18 00:15:47] [INFO]   ✓ Baseline QALYs: 172,437,951
+[2026-03-18 00:15:47] [INFO] 
+[2026-03-18 00:15:47] [INFO] Running low HR scenario (HR=1.07)...
+[2026-03-18 06:57:53] [INFO]   ✓ Low HR QALYs: 168,889,274 (Delta=-3,548,677)
+[2026-03-18 06:57:53] [INFO] 
+[2026-03-18 06:57:53] [INFO] Running high HR scenario (HR=1.38)...
+[2026-03-18 17:12:46] [INFO]   ✓ High HR QALYs: 169,321,022 (Delta=-3,116,930)
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] Results compiled (full population, no scaling required)
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] Exporting results to pd_sensitivity_analysis_growth.xlsx...
+[2026-03-18 17:12:46] [INFO] ✓ Growth sensitivity analysis complete!
+[2026-03-18 17:12:46] [INFO] ✓ Results saved to: pd_sensitivity_analysis_growth.xlsx
+[2026-03-18 17:12:46] [INFO]   Sheets: Results, Metadata
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] ================================================================================
+[2026-03-18 17:12:46] [INFO] ONE-WAY SENSITIVITY ANALYSES - COMPLETE
+[2026-03-18 17:12:46] [INFO] ================================================================================
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] End time: 2026-03-18 17:12:46.905026
+[2026-03-18 17:12:46] [INFO] Total duration: 1 day, 21:24:20.664948
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] SUMMARY:
+[2026-03-18 17:12:46] [INFO] --------------------------------------------------------------------------------
+[2026-03-18 17:12:46] [INFO]   Baseline Sensitivity Analysis: ✓ SUCCESS
+[2026-03-18 17:12:46] [INFO]   Growth Sensitivity Analysis: ✓ SUCCESS
+[2026-03-18 17:12:46] [INFO] --------------------------------------------------------------------------------
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] OUTPUT FILES:
+[2026-03-18 17:12:46] [INFO]   Baseline (50% stable):
+[2026-03-18 17:12:46] [INFO]     - pd_sensitivity_analysis.xlsx
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO]   Growth (50% → 61.25%):
+[2026-03-18 17:12:46] [INFO]     - pd_sensitivity_analysis_growth.xlsx
+[2026-03-18 17:12:46] [INFO] 
+[2026-03-18 17:12:46] [INFO] Full log saved to: C:\Users\EdwardCoote\OneDrive\periodontal\periodontal\sensitivity_analysis_results\sensitivity_analysis_log.txt
+[2026-03-18 17:12:46] [INFO] 
+✓ ALL SENSITIVITY ANALYSES COMPLETED SUCCESSFULLY!
+[2026-03-18 17:12:46] [INFO] 
+NEXT STEPS:
+[2026-03-18 17:12:46] [INFO]   1. Compare sensitivity results between scenarios
+[2026-03-18 17:12:46] [INFO]   2. Create tornado diagrams from Excel data
+[2026-03-18 17:12:46] [INFO]   3. Report upper/lower bounds in manuscript
