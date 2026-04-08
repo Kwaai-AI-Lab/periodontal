@@ -1,18 +1,21 @@
 """
-Unit tests for IBM_PD_AD.py - Alzheimer's Disease Microsimulation Model
+Unit tests for IBM_PD_AD_v3.py - Alzheimer's Disease Microsimulation Model (65+ Only)
 
 Tests are organized by function category:
 - Tier 1: Critical mathematical functions (hazard/probability conversions)
 - Tier 2: Age band handling functions
 - Tier 3: Distribution parameter functions
 - Tier 4: Smoothing and utility functions
+
+Note: This tests the v3 model which focuses on population 65+ only.
+REPORTING_AGE_BANDS in v3 are: (65, 79) and (80, None)
 """
 
 import math
 import pytest
 
-# Import functions to test
-from IBM_PD_AD import (
+# Import functions to test from v3 model
+from IBM_PD_AD_v3 import (
     # Hazard/probability conversion functions
     prob_to_hazard,
     hazard_to_prob,
@@ -309,25 +312,16 @@ class TestHazardsFromSurvival:
 class TestAssignAgeToReportingBand:
     """Tests for assign_age_to_reporting_band.
 
-    Note: Default REPORTING_AGE_BANDS are:
-    - (35, 49)
-    - (50, 64)
+    Note: Default REPORTING_AGE_BANDS in v3 (65+ only model) are:
     - (65, 79)
     - (80, None)
     """
 
     def test_age_in_first_band(self):
-        """Age in first band (35-49) should return that band."""
-        assert assign_age_to_reporting_band(35) == (35, 49)
-        assert assign_age_to_reporting_band(40) == (35, 49)
-        assert assign_age_to_reporting_band(49) == (35, 49)
-
-    def test_age_in_middle_band(self):
-        """Age in middle bands should return correct band."""
-        assert assign_age_to_reporting_band(50) == (50, 64)
-        assert assign_age_to_reporting_band(55) == (50, 64)
+        """Age in first band (65-79) should return that band."""
         assert assign_age_to_reporting_band(65) == (65, 79)
-        assert assign_age_to_reporting_band(75) == (65, 79)
+        assert assign_age_to_reporting_band(70) == (65, 79)
+        assert assign_age_to_reporting_band(79) == (65, 79)
 
     def test_age_in_last_open_band(self):
         """Age in open-ended band (80+) should return (80, None)."""
@@ -337,8 +331,10 @@ class TestAssignAgeToReportingBand:
         assert assign_age_to_reporting_band(120) == (80, None)
 
     def test_age_below_minimum_returns_none(self):
-        """Age below minimum band should return None."""
-        assert assign_age_to_reporting_band(34) is None
+        """Age below minimum band (65) should return None."""
+        assert assign_age_to_reporting_band(64) is None
+        assert assign_age_to_reporting_band(50) is None
+        assert assign_age_to_reporting_band(35) is None
         assert assign_age_to_reporting_band(20) is None
         assert assign_age_to_reporting_band(0) is None
 
@@ -351,25 +347,17 @@ class TestAssignAgeToReportingBand:
         """Float ages should work correctly.
 
         Note: The function uses integer bounds with <= comparison.
-        Float values between integer bounds (e.g., 49.9) fall into gaps and return None.
+        Float values between integer bounds (e.g., 79.9) fall into gaps and return None.
         """
-        assert assign_age_to_reporting_band(35.0) == (35, 49)
-        assert assign_age_to_reporting_band(49.0) == (35, 49)
-        # 49.9 > 49 doesn't match (35, 49), and 49.9 < 50 doesn't match (50, 64)
+        assert assign_age_to_reporting_band(65.0) == (65, 79)
+        assert assign_age_to_reporting_band(79.0) == (65, 79)
+        # 79.9 > 79 doesn't match (65, 79), and 79.9 < 80 doesn't match (80, None)
         # So it falls into a gap and returns None
-        assert assign_age_to_reporting_band(49.9) is None
-        assert assign_age_to_reporting_band(50.0) == (50, 64)
+        assert assign_age_to_reporting_band(79.9) is None
+        assert assign_age_to_reporting_band(80.0) == (80, None)
 
     def test_boundary_ages(self):
         """Test exact boundary ages between bands."""
-        # 49 should be in (35, 49), 50 in (50, 64)
-        assert assign_age_to_reporting_band(49) == (35, 49)
-        assert assign_age_to_reporting_band(50) == (50, 64)
-
-        # 64 should be in (50, 64), 65 in (65, 79)
-        assert assign_age_to_reporting_band(64) == (50, 64)
-        assert assign_age_to_reporting_band(65) == (65, 79)
-
         # 79 should be in (65, 79), 80 in (80, None)
         assert assign_age_to_reporting_band(79) == (65, 79)
         assert assign_age_to_reporting_band(80) == (80, None)
@@ -387,13 +375,13 @@ class TestAgeBandKey:
 
     def test_closed_band(self):
         """Closed band should give 'lower_upper' format."""
-        assert age_band_key((35, 49)) == "35_49"
-        assert age_band_key((50, 54)) == "50_54"
+        assert age_band_key((65, 79)) == "65_79"
+        assert age_band_key((50, 64)) == "50_64"
         assert age_band_key((0, 17)) == "0_17"
 
     def test_open_band(self):
         """Open-ended band should give 'lower_plus' format."""
-        assert age_band_key((90, None)) == "90_plus"
+        assert age_band_key((80, None)) == "80_plus"
         assert age_band_key((65, None)) == "65_plus"
 
 
@@ -402,12 +390,12 @@ class TestAgeBandLabel:
 
     def test_closed_band(self):
         """Closed band should give 'lower-upper' format."""
-        assert age_band_label((35, 49)) == "35-49"
-        assert age_band_label((50, 54)) == "50-54"
+        assert age_band_label((65, 79)) == "65-79"
+        assert age_band_label((50, 64)) == "50-64"
 
     def test_open_band(self):
         """Open-ended band should give 'lower+' format."""
-        assert age_band_label((90, None)) == "90+"
+        assert age_band_label((80, None)) == "80+"
         assert age_band_label((65, None)) == "65+"
 
 
@@ -416,18 +404,18 @@ class TestAgeBandMidpoint:
 
     def test_closed_band_midpoint(self):
         """Closed band should return numeric midpoint."""
-        assert age_band_midpoint((35, 49)) == 42.0
-        assert age_band_midpoint((50, 54)) == 52.0
+        assert age_band_midpoint((65, 79)) == 72.0
+        assert age_band_midpoint((50, 64)) == 57.0
         assert age_band_midpoint((0, 10)) == 5.0
 
     def test_open_band_returns_none(self):
         """Open-ended band should return None."""
-        assert age_band_midpoint((90, None)) is None
+        assert age_band_midpoint((80, None)) is None
         assert age_band_midpoint((65, None)) is None
 
     def test_single_year_band(self):
         """Single year band (lower == upper) should return that value."""
-        assert age_band_midpoint((50, 50)) == 50.0
+        assert age_band_midpoint((70, 70)) == 70.0
 
 
 # =============================================================================
