@@ -290,38 +290,7 @@ general_config = {
             "annual_rate": 0.0059088616,
             "reference_year": 2023,
         },
-        "fixed_entry_age": None,   # set to None to enable banded entrant ages
-        # entrant age-bands scale relative to baseline weights by milestone year
-        "age_band_multiplier_schedule": {
-            2025: {
-                (65, 69): 1.05,
-                (70, 74): 0.99,
-                (75, 79): 1.03,
-                (80, 84): 1.09,
-                (85, 100): 1.04,
-            },
-            2030: {
-                (65, 69): 1.21,
-                (70, 74): 1.09,
-                (75, 79): 0.95,
-                (80, 84): 1.37,
-                (85, 100): 1.21,
-            },
-            2035: {
-                (65, 69): 1.23,
-                (70, 74): 1.26,
-                (75, 79): 1.06,
-                (80, 84): 1.28,
-                (85, 100): 1.52,
-            },
-            2040: {
-                (65, 69): 1.16,
-                (70, 74): 1.29,
-                (75, 79): 1.23,
-                (80, 84): 1.44,
-                (85, 100): 1.62,
-            },
-        },
+        "fixed_entry_age": 65,   # All new entrants enter at age 65 (realistic population inflow)
         "sex_distribution": None      # e.g. {"female":0.52,"male":0.48}
     },
 
@@ -1782,6 +1751,17 @@ general_config = {
         'periodontal_disease': {
             'prevalence': {'female': 0.50, 'male': 0.50},
             'hazard_ratios': {'onset': {'all': 1.21}},
+            # Time-varying prevalence based on Elamin & Anash (2023)
+            # 39.7% relative increase from 2020-2050 (30 years)
+            # Adjusted to 2023-2040 (17 years): 22.5% relative increase
+            'prevalence_schedule': {
+                'use': False,  # Set to True to enable growth scenario
+                'baseline_year': 2023,
+                'baseline_prevalence': {'female': 0.50, 'male': 0.50},
+                'target_year': 2040,
+                'target_prevalence': {'female': 0.6125, 'male': 0.6125},  # 50% * 1.225
+                'interpolation': 'linear',  # linear growth from baseline to target
+            },
         },
     },
 
@@ -2149,7 +2129,7 @@ def add_new_entrants(population_state: Dict[int, dict],
             'ID': next_id_start,
             'age': age,
             'sex': sex,
-            'risk_factors': assign_risk_factors(config['risk_factors'], age, sex),
+            'risk_factors': assign_risk_factors(config['risk_factors'], age, sex, calendar_year),
             'dementia_stage': 'cognitively_normal',
             'time_in_stage': 0,
             'living_setting': 'home',
@@ -2401,13 +2381,48 @@ def resolve_risk_value(value: Any,
             return resolve_risk_value(value['all'], age, None)
     return value
 
-def get_prevalence_for_person(risk_meta: dict, age: int, sex: str) -> float:
-    """Fetch prevalence for a given age/sex combination (age ignored if scalar); clamps to [0, 1]."""
-    raw = resolve_risk_value(risk_meta.get('prevalence', 0.0), age, sex)
-    try:
-        prevalence = float(raw)
-    except (TypeError, ValueError):
-        prevalence = 0.0
+def get_prevalence_for_person(risk_meta: dict, age: int, sex: str, calendar_year: Optional[int] = None) -> float:
+    """Fetch prevalence for a given age/sex combination (age ignored if scalar); clamps to [0, 1].
+
+    If risk_meta contains a 'prevalence_schedule' with 'use': True, calculates time-varying prevalence.
+    Otherwise falls back to static prevalence.
+    """
+    # Check if time-varying prevalence is enabled
+    schedule = risk_meta.get('prevalence_schedule', {})
+    if schedule.get('use', False) and calendar_year is not None:
+        baseline_year = int(schedule.get('baseline_year', 2023))
+        target_year = int(schedule.get('target_year', 2040))
+        baseline_prev = schedule.get('baseline_prevalence', {})
+        target_prev = schedule.get('target_prevalence', {})
+
+        # Get baseline and target for this sex
+        baseline = resolve_risk_value(baseline_prev, age, sex)
+        target = resolve_risk_value(target_prev, age, sex)
+
+        try:
+            baseline = float(baseline)
+            target = float(target)
+        except (TypeError, ValueError):
+            baseline = 0.5
+            target = 0.6125
+
+        # Linear interpolation
+        if calendar_year <= baseline_year:
+            prevalence = baseline
+        elif calendar_year >= target_year:
+            prevalence = target
+        else:
+            # Interpolate between baseline and target
+            progress = (calendar_year - baseline_year) / (target_year - baseline_year)
+            prevalence = baseline + progress * (target - baseline)
+    else:
+        # Use static prevalence
+        raw = resolve_risk_value(risk_meta.get('prevalence', 0.0), age, sex)
+        try:
+            prevalence = float(raw)
+        except (TypeError, ValueError):
+            prevalence = 0.0
+
     return max(0.0, min(1.0, prevalence))
 
 def get_hazard_ratio_for_person(risk_meta: dict,
@@ -2940,10 +2955,27 @@ def sample_age(config: dict, sex: Optional[str] = None) -> int:
     lo, hi = config['initial_age_range']
     return random.randint(lo, hi)
 
-def assign_risk_factors(risk_factors: Dict[str, dict], age: int, sex: str) -> Dict[str, bool]:
+def assign_risk_factors(risk_factors: Dict[str, dict], age: int, sex: str, calendar_year: Optional[int] = None) -> Dict[str, bool]:
+    """Assign risk factors based on prevalence rates, optionally time-varying.
+
+    Parameters:
+    -----------
+    risk_factors : dict
+        Risk factor configuration dictionary
+    age : int
+        Person's age
+    sex : str
+        Person's sex ('female' or 'male')
+    calendar_year : int, optional
+        Calendar year for time-varying prevalence (if applicable)
+
+    Returns:
+    --------
+    dict : Risk factor name -> boolean status
+    """
     assigned = {}
     for rf, meta in risk_factors.items():
-        prevalence = get_prevalence_for_person(meta, age, sex)
+        prevalence = get_prevalence_for_person(meta, age, sex, calendar_year)
         assigned[rf] = random.random() < prevalence
     return assigned
 
@@ -2984,7 +3016,7 @@ def initialize_population(population: int,
             'ID': individual,
             'age': age,
             'sex': sex,
-            'risk_factors': assign_risk_factors(config['risk_factors'], age, sex),
+            'risk_factors': assign_risk_factors(config['risk_factors'], age, sex, base_year),
             'dementia_stage': stage0,
             'time_in_stage': 0,
             'living_setting': 'home',
@@ -6086,22 +6118,30 @@ if __name__ == "__main__":
             show_plots=False
         )
 
-    plot_ad_prevalence(model_results, show=True)
-    plot_ad_incidence(model_results, show=True)
-    plot_age_specific_ad_cases(model_results, show=True)
-    plot_dementia_prevalence_by_stage(model_results, show=True)
-    plot_survival_curve(model_results, show=True)
-    plot_survival_by_baseline_stage(model_results, show=True)
-    plot_baseline_age_hist(model_results, show=True)
-    plot_age_at_death_hist(model_results, show=True)
-    plot_costs_per_person_over_time(model_results, show=True)
-    plot_qalys_per_person_over_time(model_results, show=True)
-    plot_lifetime_risk_by_entry_age(model_results, show=True)
-    plot_onset_hazard_vs_age_from_base_prob(general_config, show=True)
-    plot_onset_probability_vs_age_from_base_prob(general_config, show=True)
+    # PLOTS DISABLED: Use generate_figures_2_3_4_from_model.py to create publication figures
+    # The following plots are commented out to avoid generating unnecessary charts during batch processing.
+    # All data needed for figures is exported to Excel (see export_results_to_excel below).
+    # To re-enable plots for manual runs, uncomment the lines below:
 
+    # plot_ad_prevalence(model_results, show=True)
+    # plot_ad_incidence(model_results, show=True)
+    # plot_age_specific_ad_cases(model_results, show=True)
+    # plot_dementia_prevalence_by_stage(model_results, show=True)
+    # plot_survival_curve(model_results, show=True)
+    # plot_survival_by_baseline_stage(model_results, show=True)
+    # plot_baseline_age_hist(model_results, show=True)
+    # plot_age_at_death_hist(model_results, show=True)
+    # plot_costs_per_person_over_time(model_results, show=True)
+    # plot_qalys_per_person_over_time(model_results, show=True)
+    # plot_lifetime_risk_by_entry_age(model_results, show=True)
+    # plot_onset_hazard_vs_age_from_base_prob(general_config, show=True)
+    # plot_onset_probability_vs_age_from_base_prob(general_config, show=True)
+
+    # Export all model results to Excel for journal reproducibility
+    # This includes: summary data, yearly flows, risk factor prevalence, and severity distribution
     excel_output_path = Path("results") / "Baseline_Model.xlsx"
     excel_output_path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"\nExporting results to Excel: {excel_output_path}")
 
     def _save_fallback(exc: Exception):
         fallback_path = excel_output_path.with_name(f"{excel_output_path.stem}_export_failed.pkl.gz")

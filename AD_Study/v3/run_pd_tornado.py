@@ -1,17 +1,21 @@
 """
-Example script to run periodontal disease sensitivity analysis for tornado diagrams.
+One-way sensitivity analysis for periodontal disease hazard ratio - Baseline (50% stable).
 
 This script:
 1. Loads the base configuration
-2. Runs sensitivity analysis on PD onset RR
-3. Generates tornado diagrams
-4. Exports results to Excel
+2. Runs deterministic sensitivity analysis on PD onset HR (1.07, 1.21, 1.38)
+3. Exports results to Excel (tornado plots disabled - create manually from Excel data)
 
-Computational note:
-- Uses 1% of population by default (107,875 agents from base of 10,787,479)
-- Runs 10 replicates per parameter value
-- Total: ~30 model runs (baseline + 1 param × 2 values × 10 reps each)
-- Estimated time: Several hours depending on CPU cores and model complexity
+Note: Automatic tornado plot generation is disabled as plots do not render correctly.
+      All data is exported to Excel for manual plotting.
+
+Analysis approach:
+- Scenario: Baseline (50% stable PD prevalence)
+- Population: Full population (10,787,479 agents)
+- Runs: Single deterministic run per HR value (no replicates)
+- HR values: 1.07 (low), 1.21 (baseline), 1.38 (high)
+- Total: 3 model runs
+- Estimated time: ~3 hours total
 """
 
 # Use the v3 configuration (hazard-ratio based risk factors)
@@ -55,7 +59,7 @@ def main():
         combine_sexes=True,
         seed=42,                    # Fixed seed for reproducibility across scenarios
         paired_seeds=True,          # Reuse seed across baseline/low/high
-        prevalence_values=[0.25, 0.50, 0.75],  # Run all prevalence scenarios
+        prevalence_values=[0.50],   # Baseline scenario: 50% stable prevalence
         n_jobs=1                    # Sequential runs
     )
 
@@ -63,32 +67,37 @@ def main():
     print()
 
     # Step 2: Create tornado diagrams
+    # DISABLED: Tornado plots do not render correctly and will be created manually
+    # after Excel export. All data is available in the Excel file for manual plotting.
     print("STEP 2: Creating tornado diagrams...")
     print("-" * 70)
-
-    # Create diagram for key metrics
-    create_pd_tornado_diagram(
-        results,
-        metrics=['total_qalys_combined', 'incident_onsets_total', 'total_costs_all'],
-        save_path='plots/pd_tornado_main.png',
-        show=False
-    )
-
-    # Optional: Create separate diagrams for specific metrics
-    for metric, label in [
-        ('total_qalys_combined', 'QALYs'),
-        ('incident_onsets_total', 'Incidence'),
-        ('total_costs_all', 'Costs')
-    ]:
-        create_pd_tornado_diagram(
-            results,
-            metrics=[metric],
-            save_path=f'plots/pd_tornado_{label.lower()}.png',
-            show=False
-        )
-
-    print("\nOK All tornado diagrams created in plots/")
+    print("  Tornado plot generation DISABLED (plots do not render correctly)")
+    print("  All data is available in Excel for manual plotting")
     print()
+
+    # # Create diagram for key metrics
+    # create_pd_tornado_diagram(
+    #     results,
+    #     metrics=['total_qalys_combined', 'incident_onsets_total', 'total_costs_all'],
+    #     save_path='plots/pd_tornado_main.png',
+    #     show=False
+    # )
+
+    # # Optional: Create separate diagrams for specific metrics
+    # for metric, label in [
+    #     ('total_qalys_combined', 'QALYs'),
+    #     ('incident_onsets_total', 'Incidence'),
+    #     ('total_costs_all', 'Costs')
+    # ]:
+    #     create_pd_tornado_diagram(
+    #         results,
+    #         metrics=[metric],
+    #         save_path=f'plots/pd_tornado_{label.lower()}.png',
+    #         show=False
+    #     )
+
+    # print("\nOK All tornado diagrams created in plots/")
+    # print()
 
     # Step 3: Export to Excel
     print("STEP 3: Exporting results to Excel...")
@@ -141,11 +150,10 @@ def main():
     print("="*70)
 
     print("\nOutput files:")
-    print("  📊 plots/pd_tornado_main.png - Combined tornado diagram")
-    print("  📊 plots/pd_tornado_qalys.png - QALYs tornado diagram")
-    print("  📊 plots/pd_tornado_incidence.png - Incidence tornado diagram")
-    print("  📊 plots/pd_tornado_costs.png - Costs tornado diagram")
-    print("  📄 pd_sensitivity_analysis.xlsx - Detailed results")
+    print("  📄 pd_sensitivity_analysis.xlsx - Detailed results (use this for manual plotting)")
+    print()
+    print("Note: Tornado plots are disabled. All data is available in the Excel file.")
+    print("      Create tornado diagrams manually using the 'Baseline', 'Low', and 'High' sheets.")
     print()
 
 

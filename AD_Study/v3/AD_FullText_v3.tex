@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{makecell}
 \usepackage{longtable}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{setspace}
@@ -30,6 +31,40 @@
 
 \maketitle
 
+
+\section*{Author information}
+Edward Coote$^{1,*}$, Dr Nitesh Patel$^{1}$, Dr Rajesh Vijayanarayanan$^{1}$
+
+$^{1}$21D Clinical Limited, Warrington, United Kingdom
+
+$^{*}$Corresponding author: edward.coote@21d.co.uk, ORCiD ID: 0009-0000-3092-7278
+
+\section*{Keywords}
+Periodontal disease; Dementia; Microsimulation; Risk factors; Public health
+
+\section*{Statements \& Declarations}
+
+\subsection*{Funding}
+No specific funding was received for this study.
+
+\subsection*{Competing Interests}
+The authors of this study work for 21D Clinical Limited, a private company that specialises in full-jaw rehabilitation. The purpose of this study is to begin to establish an internal research team within 21D Clinical which wishes to explore the wider impacts of periodontal disease. 21D Clinical will not directly benefit from the results of this study. Every effort has been to ensure transparency and objectivity.
+
+\subsection*{Author Contributions}
+RV conceived, designed and supervised the study. NP collected literature and data and made substantial contributions to the manuscript. EC built the model, collected the data and made substantial contributions to the manuscript.
+
+\subsection*{Ethics Approval}
+N/a
+
+\subsection*{Consent to Participate}
+N/a
+
+\subsection*{Consent to Publish}
+N/a
+
+\subsection*{Data Availability}
+The model code and data used in this study are available at https://github.com/edcoote/Individual-based-dementia-model-for-England-over-65-year-olds-.
+
 \begin{abstract}
 
 \subsection*{Background}
@@ -39,10 +74,10 @@ Periodontal disease (PD) is a prevalent modifiable dementia risk factor that is 
 We developed an individual-level microsimulation model simulating the England population aged 65 and older from 2024 to 2040 (yearly timesteps). We incorporated increasing dementia severity stages, care setting transitions and six modifiable risk factors alongside APOE $\varepsilon$4 carrier status. Age-related dementia onset was driven by a parametric age-scaled hazard. Individual risk factor hazard ratios (HR) were applied multiplicatively. We estimated dementia incidence, prevalence, formal and informal care costs, and quality-adjusted life years (QALYs) under three PD prevalence scenarios (25\%, 50\% baseline, 75\%). Our sensitivity analysis included probabilistic sensitivity analysis (PSA) and deterministic one-way sensitivity analysis on the PD-dementia onset HR.
 
 \subsection*{Results}
-At 50\% PD prevalence, cumulative dementia incidence totalled 2.80 million cases over 2024--2040, with prevalence rising from 7.95\% to 10.14\%. Reducing PD prevalence to 25\% prevented approximately 115,000 incident cases (4.1\% reduction) and generated cumulative cost savings of \pounds19.7 billion (\pounds10.9bn formal; \pounds8.8bn informal). Each percentage point reduction in PD prevalence was associated with approximately 678 fewer annual dementia onsets and \pounds46 million in annual savings. Population QALYs varied by less than 0.2\% across scenarios. Probabilistic sensitivity analysis confirmed robustness across all outcomes (coefficient of variation 5.2\%--10.4\%).
+At 50\% PD prevalence, cumulative dementia incidence totalled 2.36 million cases over 2024--2040, with prevalence rising by 25\%. Reducing PD prevalence to 25\% prevented approximately 95,000 incident cases and generated cumulative cost savings of \pounds17.7 billion (\pounds9.61bn formal; \pounds8.09bn informal). Increasing PD prevalence to 75\% resulted in near symmetric opposite results. Population QALYs varied by less than 0.2\% across scenarios. Probabilistic sensitivity analysis confirmed robustness across all outcomes (coefficient of variation 5.2\%--10.4\%).
 
 \subsection*{Conclusions}
-Reductions in PD prevalence, if the observed association with dementia is causal, could yield substantial reductions in dementia incidence and associated costs in England. PD functions as a weak but highly prevalent risk factor, where population-level benefits derive from the large exposed population rather than strong individual risk.
+Reductions in PD prevalence, if the observed association with dementia is causal, could yield substantial reductions in dementia incidence and associated care costs in England. PD functions as a weak but highly prevalent risk factor, where population-level benefits derive from the large exposed population rather than strong individual risk. Greater clinical trial and prospective studies need to explore the PD-dementia magnitude effect size.
 
 \end{abstract}
 
@@ -54,23 +89,32 @@ There is substantial evidence that PD is a risk factor for dementia \cite{ref5,r
 
 Dementia costs in England are expected to rise significantly, with one estimate forecasting a 173\% rise from 2019 to 2040, totalling \pounds80.4 billion by 2040 \cite{ref17}. Costs for England account for 85\% of the total 2040 costs for the UK. The same projection gives 1.35 million total older people living with dementia in England in 2040, also accounting for 85\% of the UK's total burden. Approximately 45\% of all dementia cases are attributable to preventable risk factors \cite{ref18}. Modelling the effects of population-based interventions on dementia risk factors can provide estimates of potential cost-saving and disease reduction. If hypertension prevalence fell in England and Wales by 50\% between 2027 and 2060, an estimated 57 fewer deaths per 100,000 population but an increase of 9 more dementia cases per 100,000 is expected \cite{ref19}. This highlights the interplay between reduced risk factor prevalence and extended life expectancy, which may raise overall dementia prevalence. A 50\% reduction in the current global prevalence of PD could prevent 850,000 individuals from developing dementia \cite{ref6}. Given the strong evidence linking periodontal disease to dementia and the projected rise in dementia-related costs, estimating the effects of reducing periodontal disease prevalence is essential to inform prevention strategies.
 
-We use an individual-level microsimulation model to estimate the costs and benefits associated with counterfactual scenarios in severe PD prevalence on future dementia outcomes. We start with the current estimated PD prevalence of 50\%, then test a prevalence of 25\% and 75\%. This will account for the effects of other dementia risk factors on both dementia and mortality risk.
+We use an individual-level microsimulation model to estimate the costs and benefits associated with counterfactual scenarios in severe PD prevalence on future dementia outcomes. We start with the current estimated PD prevalence of 50\%, then test a prevalence of 25\% and 75\%.
 
 \section{Methods}
 
 \subsection{Model overview}
 
-We simulated the England population (aged 65 years and older) from a 2023 baseline, used for initialisation only, to 2040 in annual time steps, with results reported from 2024 onward. New individuals entered the model yearly through a fixed-size entrant cohort ($n = 700{,}000$), reweighted and sized to match age- and sex-specific population projections from the Office for National Statistics \cite{ref20,ref21}. The baseline dementia prevalence, age distribution and severity stage mix was set using the Primary Care Dementia Data register. Dementia was defined as diagnosed all-cause dementia, referring to any type of dementia regardless of its cause \cite{ref22}. We developed a stochastic time-to-event microsimulation model with a dementia stage structure consistent with previous dementia progression models, using longitudinal evidence and mortality projections to inform transition hazards \cite{ref19,ref23,ref24,ref25}.
+We simulated the England population (aged 65 years and older) from a 2023 baseline, used for initialisation only, to 2040 in annual time steps, with results reported from 2024 onward. New individuals entered the model yearly through a fixed-size entrant cohort ($n = 700{,}000$). We used age- and sex-specific population projections from the Office for National Statistics as validation targets (results in Supplementary Material Figures 7.A-7.B) \cite{ref20,ref21}. The baseline dementia prevalence, age distribution and severity stage mix was set using the Primary Care Dementia Data register. Dementia was defined as diagnosed all-cause dementia, referring to any type of dementia regardless of its cause \cite{ref22}. We developed a stochastic time-to-event microsimulation model with a dementia stage structure consistent with previous dementia progression models, using longitudinal evidence and mortality projections to inform transition hazards \cite{ref19,ref23,ref24,ref25}.
 
-Dementia in our model is split in five stages; cognitively normal, mild, moderate, severe, and death. Dementia-related death was permitted only in the severe stage, while background mortality could occur from any state. Disease state changes are simulated each year. Individuals with dementia could transition between home and institution (or remain in current) care each year based on setting transition probabilities \cite{ref26}. The baseline onset probability of dementia was calculated using current dementia incidence from NHS England data. We externally validated our model to observed prevalence data from 2023 to 2024, with goodness of fit assessed with $R^2$ and slope coefficients.
+Dementia in our model is split in five stages; cognitively normal, mild, moderate, severe, and death (Supplementary Material Figure 1.A). Dementia-related death was permitted only in the severe stage, while background mortality could occur from any state. Disease state changes are simulated each year. Individuals with dementia could transition between home and institution (or remain in current) care each year based on setting transition probabilities \cite{ref26}. The baseline onset probability of dementia was calculated using current dementia incidence from NHS England data. We externally validated our model to observed prevalence data from 2023 to 2024, with goodness of fit assessed with $R^2$ and slope coefficients.
 
 \subsubsection{Equation 1: Dementia onset formula}
 
-The mean time in each dementia stage has been collected from \cite{ref27}. This provides a constant hazard (exponential assumptions) for the effect that time in a dementia stage has on disease progression. Initial dementia stage was set from a previously published report \cite{ref26}. We used a parametric proportional hazards age effect to scale the increasing effects that age has on dementia onset. This provides a continuous increase in risk with age rather than discrete banding, as seen in longitudinal studies of dementia incidence \cite{ref28}. We calculated the relevant $\beta$ for the per-year log-hazard slope increase of stage transitions \cite{ref29,ref30,ref31}. Risk factor hazard ratios were applied to dementia onset. Onset from cognitively normal is driven by a baseline annual onset probability (converted to a hazard), then scaled by a parametric age effect and individual risk-factor hazard ratios (Equation 1). Full details of our model mechanisms are provided in the supplementary information.
+The mean time in each dementia stage has been collected from \cite{ref27}. This provides a constant hazard (exponential assumptions) for the effect that time in a dementia stage has on disease progression. Initial dementia stage was set from a previously published report \cite{ref26}. We used a parametric proportional hazards age effect to scale the increasing effects that age has on dementia onset. This provides a continuous increase in risk with age rather than discrete banding, as seen in longitudinal studies of dementia incidence \cite{ref28}. We calculated the relevant $\beta$ for the per-year log-hazard slope increase of stage transitions \cite{ref29,ref30,ref31}. Risk factor hazard ratios were applied to dementia onset. Onset from cognitively normal is driven by a baseline annual onset probability (converted to a hazard), then scaled by a parametric age effect and individual risk-factor hazard ratios (Equation 1):
+
+\begin{equation}
+\label{eq:dementia_onset}
+h_{\text{onset}}(t, \text{age}) = h_0(t) \times \exp(\beta \times \text{age}) \times \prod_{i} \text{HR}_i
+\end{equation}
+
+\noindent where $h_{\text{onset}}(t, \text{age})$ is the hazard of dementia onset at time $t$ and age; $h_0(t)$ is the baseline annual onset hazard; $\beta$ is the age scaling coefficient; and $\text{HR}_i$ represents the hazard ratio for each risk factor $i$ present in the individual.
+
+Full details of our model mechanisms are provided in the supplementary information (pages 1-3).
 
 \subsection{Risk factors}
 
-In this model, risk factors interact with dementia onset. Progression uses exponential stage-duration hazards, scaled by age. We only modelled disease- and genetic-related risk factors (leaving out socioeconomic and lifestyle-related risk factors). We used a single study for all HR's and prevalences, which derived them from the UK Biobank (Table \ref{tab:risk_factors}) \cite{ref32}. Disease prevalence (except PD) and HRs were held constant throughout the forecast. This risk set captures the vascular and inflammatory pathways that influence cognitive decline. We decided not to measure lifestyle factors due to difficulty in establishing prevalence rates relevant for individuals in later life, and uncertainty over the role of early life socioeconomic factors (education level) on dementia onset specific to over 65 year olds.
+In this model, risk factors interact with dementia onset. Progression uses exponential stage-duration hazards, scaled by age. We only modelled disease- and genetic-related risk factors (leaving out socioeconomic and lifestyle-related risk factors). We used a single study for all HR's and prevalences, which derived them from the UK Biobank (Table \ref{tab:risk_factors}) \cite{ref32}. We obtained the HR for PD-dementia onset from a meta-analysis (n = 23) of longitudinal studies that accounted for reverse causality \cite{ref33}. Disease prevalence (except PD) and HRs were held constant throughout the forecast. This risk set captures the vascular and inflammatory pathways that influence cognitive decline. We decided not to measure lifestyle factors due to difficulty in establishing prevalence rates relevant for individuals in later life, and uncertainty over the role of early life socioeconomic factors (such as education level) on dementia onset specific to over 65 year olds.
 
 \begin{table}[htbp]
 \centering
@@ -93,9 +137,9 @@ APOE $\varepsilon$4 carrier & 3.03 (2.88--3.19) & 25.6\% \\
 
 \subsection{Estimation of costs and QALYs}
 
-We estimated the economic costs of dementia for direct formal healthcare and social care and informal caregivers. Table \ref{tab:costs} shows the yearly costs used and Figure \ref{fig:flowchart} shows the cost allocation. Costing data was sourced from a 2024 report on dementia and converted to 2023 values using GDP deflators \cite{ref34,ref35}. For direct formal healthcare and social care costs we included healthcare and social care. Informal costs include unpaid care and quality of life costs, which we separated into costs for dementia patients in home or institution care (Supplementary Material). This means our total per person costs of dementia by severity are less than the values found in the Carnall Farrar report due to our dissemination of unpaid and healthcare costs across institutional care.
+We estimated the economic costs of dementia for direct formal healthcare and social care and informal caregivers. Table \ref{tab:costs} shows the yearly costs used and Figure \ref{fig:flowchart} shows the cost allocation. Costing data was sourced from a 2024 report on dementia and converted to 2023 values using GDP deflators \cite{ref34,ref35}. For direct formal healthcare and social care costs we included healthcare and social care. Informal costs include unpaid care and quality of life costs, which we separated into costs for dementia patients in home or institution care (Supplementary Material Table 4.A-B). This means our total per person costs of dementia by severity are less than the values found in the Carnall Farrar report due to our dissemination of unpaid and healthcare costs across institutional care.
 
-QALYs are commonly used to value the benefit of interventions, with one QALY equating a year of life in perfect health \cite{ref36}. This means years of life can take into account the quality and quantity of life. Dementia stage specific QALY utility values were obtained from a previous study modelling the benefits of population-level interventions for dementia risk factors and applied to those with dementia \cite{ref37}. Age specific utility values for cognitively normal were taken from the UK Population Norms for EQ-5D \cite{ref38}. An informal caregiver for someone with dementia will also see their quality of life affected due to the strain of care. We apply a caregiver disutility impact for dementia-at-home individuals and treat it as an incremental disutility. These utility values were attained from literature assessing the impact of caring for people with dementia \cite{ref39}. Despite the National Institute of Care and Excellence (NICE) and the UK Treasury suggestion to annually discount costs and QALYs at 3.5\%, we decided not to in order to increase comparability of results \cite{ref40}. Within each calendar year, differences in total QALYs between scenarios reflect changes attributable to PD-driven differences in dementia onset, survival, and progression (and associated caregiver impacts), holding all other model components constant. Full methodology for the measurement of costs and QALYs can be found in the supplementary information.
+QALYs are commonly used to value the benefit of interventions, with one QALY equating a year of life in perfect health \cite{ref36}. This means years of life can take into account the quality and quantity of life. Dementia stage specific QALY utility values were obtained from a previous study modelling the benefits of population-level interventions for dementia risk factors and applied to those with dementia \cite{ref37}. Age specific utility values for cognitively normal were taken from the UK Population Norms for EQ-5D \cite{ref38}. An informal caregiver for someone with dementia will also see their quality of life affected due to the strain of care. We apply a caregiver disutility impact for dementia-at-home individuals and treat it as an incremental disutility. These utility values were attained from literature assessing the impact of caring for people with dementia \cite{ref39}. Within each calendar year, differences in total QALYs between scenarios reflect changes attributable to PD-driven differences in dementia onset, survival, and progression (and associated caregiver impacts), holding all other model components constant. Full methodology for the measurement of costs and QALYs can be found in the supplementary information (pages 4-6).
 
 \begin{table}[htbp]
 \centering
@@ -128,15 +172,15 @@ Differences in dementia incidence and prevalence over time were estimated under 
 
 \subsection{Sensitivity analysis}
 
-We conducted probabilistic sensitivity analysis (PSA) with 500 Monte Carlo iterations for 1\% of the target population ($n = 107{,}874$), sampling uncertain parameters from probability distributions (sampling costs with the gamma distribution, utilities and probabilities with beta, and risk HRs with lognormal from CIs; relative SD = 10\%) \cite{ref41}. The outcomes were then scaled back up by a factor of 100. This was due to the computational strain of sampling for the full population. Results are reported as means with 95\% confidence intervals.
+We conducted probabilistic sensitivity analysis (PSA) with 500 Monte Carlo iterations for 1\% of the target population ($n = 107{,}874$), sampling uncertain parameters from probability distributions (sampling costs with the gamma distribution, utilities and probabilities with beta, and risk HRs with lognormal from CIs; relative SD = 10\% where CIs were not given (full values in Supplementary Material Table 8.A-D) \cite{ref40}. The outcomes were then scaled back up by a factor of 100. This was due to the computational strain of sampling for the full population. Results are reported as means with 95\% confidence intervals. Coefficients of variation ((standard deviation / mean)*100) are also reported.
 
-Deterministic one-way sensitivity analysis was conducted to specifically address the uncertainty surrounding PD's impact on dementia onset using the published 95\% CI bounds for PD HRs (1.07--1.38 for onset). As with our PSA, the runs used 1\% of the total population with 10 independent model runs per PD prevalence due to computational feasibility. Outputs were then scaled up to full-cohort equivalents.
+Deterministic one-way sensitivity analysis was conducted to specifically address the uncertainty surrounding PD's impact on dementia onset using the published 95\% CI bounds for PD HRs (1.07--1.38 for onset). We used 100\% of the total population, with each lower and upper bound of the HR used for each PD prevalence run.
 
 \section{Results}
 
 \subsection{Disease outcomes}
 
-Over the 2024--2040 forecast period, cumulative dementia incidence at the current 50\% PD incident onset totalled 2.80 million cases, with prevalence increasing by 32\% (Table \ref{tab:outcomes}). Reducing prevalence to 25\% prevented 114,814 cases (4.1\% reduction), while the 75\% deterioration scenario resulted in an additional 112,921 cases (3.9\% increase) from baseline. In the baseline run, dementia prevalence increased from 7.95\% in 2024 to 10.14\% in 2040, primarily driven by the ageing population. Annual dementia incidence at baseline increased from 151,00 cases in 2024, to 180,000 cases in 2040. The 25\% intervention scenario consistently showed $\sim$7,000 fewer annual cases, with the 75\% deterioration scenario resulting in $\sim$7,000 more annual cases. The symmetric effects between both an increase and decreases demonstrate linear dose-response in both directions from baseline.
+Over the 2024--2040 forecast period, cumulative dementia incidence at the current 50\% PD incident onset totalled 2.36 million cases, with prevalence increasing by 25\% (Table \ref{tab:outcomes}). Reducing prevalence to 25\% prevented 95,442 cases (10.3\% reduction), while the 75\% deterioration scenario resulted in an additional 95,442 cases (4\% increase) from baseline. Annual dementia incidence at baseline increased from 144,357 cases in 2024, to 153,511 cases in 2040. The 25\% intervention scenario consistently showed $\sim$5,000 fewer annual cases, with the 75\% deterioration scenario resulting in $\sim$5,000 more annual cases. The symmetric effects between both an increase and decreases demonstrate linear dose-response in both directions from baseline. Setting all risk factor prevalence rates to 0\% we were able to calculate the preventable share of dementia cases for our baseline model, which was 35\% (full results in Supplementary Material Figure 7.A-F).
 
 \begin{table}[htbp]
 \centering
@@ -148,108 +192,128 @@ Over the 2024--2040 forecast period, cumulative dementia incidence at the curren
 \textbf{Outcome} & \textbf{25\% PD} & \textbf{50\% PD (Baseline)} & \textbf{75\% PD} \\
 \midrule
 \multicolumn{4}{l}{\textit{Dementia Burden}} \\
-Total incident cases & 2,516,334 & 2,804,596 & 2,917,517 \\
-2024--2040 difference (\% change) & 21 & 19 & 18 \\
-Final prevalence (2040) & 1,098,064 & 1,140,670 & 1,186,110 \\
-2024--2040 difference (\% change) & 29 & 32 & 37 \\
-Cases per 100,000 population & 24,089 & 25,138 & 26,164 \\
+Total incident cases & 2,113,896 & 2,357,052 & 2,452,248 \\
+2024--2040 difference (\% change) & 7 & 6 & 5 \\
+Final prevalence (2040) & 1,022,436 & 1,063,789 & 1,105,289 \\
+2024--2040 difference (\% change) & 20 & 25 & 28 \\
 \addlinespace
 \multicolumn{4}{l}{\textit{Economic Outcomes}} \\
-Total formal costs (\pounds bn) & 340.57 & 351.49 & 362.34 \\
-2024--2040 difference (\% change, year-by-year) & 174 & 184 & 193 \\
-Total informal costs (\pounds bn) & 268.13 & 276.94 & 285.70 \\
-2024--2040 difference (\% change, year-by-year) & $-12$ & $-9$ & $-6$ \\
+Total formal costs (\pounds bn) & 320.86 & 330.47 & 340.45 \\
+2024--2040 difference (\% change, year-by-year) & 165 & 175 & 183 \\
+Total informal costs (\pounds bn) & 245.68 & 253.77 & 261.47 \\
+2024--2040 difference (\% change, year-by-year) & $-19$ & $-16$ & $-13$ \\
 \addlinespace
 \multicolumn{4}{l}{\textit{Health Utilities}} \\
-Total population QALYs (mn) & 141.38 & 141.22 & 141.05 \\
-Total caregiver QALYs & 10.20 & 10.55 & 10.90 \\
+Total population QALYs (mn) & 163.12 & 162.95 & 162.79 \\
+Total caregiver QALYs (mn) & 9.16 & 9.48 & 9.79 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{images/figure_2.png}
+\includegraphics[width=\textwidth]{images/figure_2.png}
 \caption{Comparative risk factor landscape at 50\% PD prevalence baseline}
 \label{fig:risk_landscape}
 \end{figure}
 
 \subsection{Economic outcomes}
 
-Cumulative formal healthcare costs at a PD prevalence of 50\% reached \pounds351.49bn. At 25\% prevalence, there was formal healthcare cost savings of \pounds10.92bn (3.1\% reduction), while a prevalence of 75\% resulted in additional costs of \pounds10.85bn (3.0\% increase). Initially, informal healthcare costs exceeded formal healthcare costs (2024: \pounds18.4bn vs \pounds9bn) but were surpassed in 2027 (formal care: \pounds17.11bn; informal care: 16.41bn). This is as more individuals with dementia moved into institutional care (for 50\% prevalence run: 2024: 12\% in formal care institution; 2027: 30\% in formal care institution; 2030: 36\% in formal care institution; 2040: 38\% in formal care institution), and as the time progressed in the model those in care accrued more per-person costs. Cumulative informal healthcare costs at a PD prevalence of 50\% reached \pounds276.94bn. 25\% PD prevalence saw informal cost savings of \pounds8.81bn, and a PD prevalence of 75\% resulted in an increase of \pounds8.77bn. Over the forecast period, this averages to \pounds171,000--\pounds173,000 total saved per dementia case avoided. Given an average dementia cost per individual (2024--2040) of \pounds35,977 (50\% prevalence), this implies that preventing one case avoids approximately 5-years of dementia-related care costs. This can also be interpreted as the average duration individuals live with dementia in the model.
+Cumulative formal healthcare costs at a PD prevalence of 50\% reached \pounds330.47bn. At 25\% prevalence, there was formal healthcare cost savings of \pounds9.61bn (2.9\% reduction), while a prevalence of 75\% resulted in additional costs of \pounds9.97bn (3.0\% increase). Initially, cumulative informal healthcare costs exceeded formal healthcare costs (50\% PD prevalence; 2024: \pounds18.3bn vs \pounds8.9bn) but were surpassed in 2031 (formal care: \pounds129.21bn; informal care: 125.52bn). This is as more individuals with dementia moved into institutional care (for 50\% prevalence run: 2024: 12\% in formal care institution; 2031: 38\% in formal care institution; 2040: 40\% in formal care institution), and as the time progressed in the model those in care accrued more per-person costs. Cumulative informal healthcare costs at a PD prevalence of 50\% reached \pounds253.77bn. 25\% PD prevalence saw informal cost savings of \pounds8.09bn, and a PD prevalence of 75\% resulted in an increase of \pounds7.7bn. Over the forecast period, this averages to $\sim$\pounds185,000 total saved per dementia case avoided. Given an average dementia cost per individual (2024--2040) of \pounds36,528.62 (50\% prevalence), this implies that preventing one case avoids approximately 5-years of dementia-related care costs. This can also be interpreted as the average duration individuals live with dementia in the model.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{images/figure_3.png}
+\includegraphics[width=\textwidth]{images/figure_3.png}
 \caption{Annual dementia costs by periodontal disease prevalence scenario}
 \label{fig:annual_costs}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.8\textwidth]{images/figure_4.png}
+\includegraphics[width=\textwidth]{images/figure_4.png}
 \caption{Cumulative QALY differences from 50\% baseline 2024--2040}
 \label{fig:qaly_diff}
 \end{figure}
 
 \subsection{Health utility outcomes}
 
-For both the lower prevalence and higher prevalence scenario, cohort QALYs differed marginally from the baseline 50\% prevalence, with only small year-on-year differences within the PD prevalences (Figure \ref{fig:qaly_diff}). Total cohort QALYs (not including caregiver QALYs) totalled 141.38mn at 25\% PD prevalence, 141.22mn at 50\%, and 141.05mn at 75\%. This is less than a 0.2\% variation around the baseline. Year-by-year cohort QALYs remained stable across scenarios, varying by less than 200,000 QALYs across 2024--2040. Caregiver QALYs, assigned to each individual with dementia, demonstrated greater variability. The lower 25\% PD prevalence resulted in 10.20 million caregiver QALYs, 50\% PD prevalence 10.55 million, and 75\% PD prevalence 10.90 million. This relationship represents the model structure, as a reduced dementia population resulted in a smaller caregiver population, and therefore less caregiver QALYs accrued.
+For both the lower prevalence and higher prevalence scenario, cohort QALYs differed marginally from the baseline 50\% prevalence, with only small year-on-year differences within the PD prevalences (Figure \ref{fig:qaly_diff}). Total cohort QALYs (not including caregiver QALYs) totalled 163.12mn at 25\% PD prevalence, 162.95mn at 50\%, and 162.79mn at 75\%. This is less than a 0.2\% variation around the baseline. Year-by-year cohort QALYs remained stable across scenarios, varying by less than 200,000 QALYs across 2024--2040. Caregiver QALYs, assigned to each individual with dementia, demonstrated greater variability. The 25\% PD prevalence resulted in 9.16mn caregiver QALYs, 50\% PD prevalence 9.48mn, and 75\% PD prevalence 9.79mn. This relationship represents the model structure, as a reduced dementia population resulted in a smaller caregiver population, and therefore less caregiver QALYs accrued.
 
 \subsection{Sensitivity analysis results}
 
-Our PSA results demonstrate the stability of our base case results across all three prevalence scenarios, displaying robustness to parameter uncertainty (summarised in Table \ref{tab:psa}, full results in Supplementary Materials). Results demonstrate statistical robustness with narrow confidence intervals. Whole cohort QALY outcomes demonstrated the lowest uncertainty with CV = 5.6\%--5.7\%, but caregiver QALYs had the highest CV (CV = 9.9\%--10.4\%). Formal cost showed slightly higher variation (CV = 9.7\%10.2\%) than informal costs (CV = 9.0\%--9.5\%), but both were consistent across PD prevalence scenarios. Cumulative incident dementia cases also demonstrated statistical robustness across PD prevalence's (CV = 8.85--9.4\%). Cumulative incident dementia cases ranged from 2.84mn at 25\% PD prevalence (95\% CI: 2.33mn--3.34mn), 3.08mn to 75\% PD prevalence (95\% CI: 2.50mn--3.64mn).
+Our PSA results demonstrate the stability of our base case results across all three prevalence scenarios, displaying robustness to parameter uncertainty (summarised in Table \ref{tab:psa}, full results in Supplementary Materials Table 9.A). Results demonstrate statistical robustness with narrow confidence intervals. Whole cohort QALY outcomes demonstrated the lowest uncertainty with CV = 5.23\%--5.29\%, but caregiver QALYs had the highest CV (CV = 9.84\%--10.44\%). Formal cost showed slightly higher variation (CV = 9.70\%10.24\%) than informal costs (CV = 8.92\%--9.55\%), but both were consistent across PD prevalence scenarios. Cumulative incident dementia cases also demonstrated statistical robustness across PD prevalence's (CV = 9.05--9.71\%). Cumulative incident dementia cases ranged from 2.26mn at 25\% PD prevalence (95\% CI: 1.82mn--2.68mn), 2.47mn to 75\% PD prevalence (95\% CI: 1.98mn--32.95mn).
 
 \begin{table}[htbp]
 \centering
-\caption{Summary of cumulative PSA results}
+\caption{Summary of mean cumulative PSA results. 2024\pounds\ costs.CV = coefficient of variation}
 \label{tab:psa}
 \small
 \begin{tabular}{lccc}
 \toprule
 \textbf{Outcome} & \textbf{25\% PD Prevalence} & \textbf{50\% PD Prevalence} & \textbf{75\% PD Prevalence} \\
 \midrule
-Total costs (\pounds bn) & 620.6 (516.6--724.4); & 642.2 (529.9--752.9); & 662.6 (544.8--779.6); \\
- & CV: 8.4\% & CV: 8.6\% & 8.9\% \\
-Total QALYs (mn) & 152.1 (136.2--167.4); & 152.3 (136.6--167.2); & 152.5 (136.6--167.3); \\
- & CV: 5.3\% & CV: 5.2\% & 5.2\% \\
-Incident cases (mn) & 2.8 (2.3--3.3); & 3.0 (2.4--3.5); & 3.1 (2.5--3.6); \\
- & CV: 8.8\% & CV: 9.0\% & 9.4\% \\
+Total costs (\pounds bn) & 567.23 (473.91--662.48); & 586.25 (487.42--683.46); & 605.25 (500.87--711.46); \\
+ & CV: 8.3\% & CV: 8.6\% & CV: 8.9\% \\
+Total QALYs (mn) & 172.80 (155.1--187.2); & 173.0 (155.3--187.3); & 173.11 (155.50--187.30); \\
+ & CV: 5.29\% & CV: 5.26\% & 5.23\% \\
+Incident cases (mn) & 2.26 (1.82--2.68); & 2.36 (1.91--2.80); & 2.47 (1.98--2.95); \\
+ & CV: 9.05\% & CV: 9.33\% & 9.71\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Deterministic one-way sensitivity analysis varying the PD-dementia onset HR across its confidence interval (1.07--1.38) showed proportional changes in dementia incidence and costs, confirming the linear relationship between PD prevalence and dementia outcomes.
+\begin{table}[htbp]
+\centering
+\caption{One-way sensitivity results from varying periodontal disease-dementia onset HR. * = Not including caregiver QALYs. All costs are in 2024\pounds.}
+\label{tab:oneway}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+\textbf{PD prevalence} & \textbf{HR Used} & \makecell{\textbf{Total Costs (£bn)} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total population} \\ \textbf{QALYs (mn)*} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total caregiver} \\ \textbf{QALYs (mn)} \\ \textbf{(\% change from} \\ \textbf{baseline)}} & \makecell{\textbf{Total Incident} \\ \textbf{Onsets (mn)} \\ \textbf{(\% change from} \\ \textbf{baseline)}} \\
+\midrule
+75\% & High (1.38) & \pounds607.90 ($1$) & 159.57 ($-2$) & 10.02 (2) & 2.66 (5) \\
+ & Low (1.07) & \pounds532.63 ($-12$) & 160.23 ($-2$) & 8.71 ($-11$) & 2,25 ($-12$) \\
+50\% & High (1.38) & \pounds577.39 ($-1$) & 159.84 ($-2$) & 9.48 ($0$) & 2,49 (2) \\
+ & Low (1.07) & \pounds527.06 ($-10$) & 160.30 ($-2$) & 8.60 ($-9$) & /2,22 ($-9$) \\
+25\% & High (1.38) & \pounds546.17 ($-4$) & 160.12 ($-2$) & 8.94 ($-2$) & 2.32 ($-1$) \\
+ & Low (1.07) & \pounds520.80 ($-8$) & 160.33 ($-2$) & 8.49 ($-7$) & 2,18 ($-7$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results of our one-way sensitivity analysis are summarised in Table \ref{tab:oneway} (full results in Supplementary Material, Table 10.A). Using the lower HR reduced total costs, caregiver QALYs, and incident dementia onsets by 2\%--12\% across scenarios. Total population QALYs were largely insensitive to HR variation, changing by only $\pm$2\% across all scenarios. All results behaved as expected, except the fall in total incident onsets under 25\% PD prevalence when the upper bound HR was used, and the increase in total costs using the higher HR value at 75\% prevalence. Using the upper HR led to total costs falling by 1\%--4\%, except at 75\% prevalence.
 
 \section{Discussion}
 
 \subsection{Model validation}
 
-Our one-year validation of population structure and prevalence demonstrated good model fit (Supplementary Material). We have compared our 50\% PD prevalence model with the results of existing dementia models (Supplementary Material). Given the consistency in model outcomes, provided the differences in ONS population projections used and per dementia case cost differences, our results are comparable to previously published forecasts.
+Our one-year validation of prevalence demonstrated good model fit (Supplementary Material Figure 6.A). We used ONS population projections as a validation tool against our model. The root mean square error, calculated as the difference between our predicted and ONS predicted values, ranged from 1.56\% to 4.42\% (Supplementary Material Figure 6.B). The ONS population projections did not provide specific estimates for ages 85-89.
 
 \subsection{Interpretation and policy implications of results}
 
-At a current PD prevalence of 50\%, we projected that there will be 2.80 million incident dementia cases among adults aged 65+ in England over 2024--2040. Halving PD prevalence to 25\% prevented 114,814 incident cases, while increasing it to 75\% added 112,921 incident cases. Total dementia-related cost savings from halving PD were \pounds19.7bn, compromised of \pounds10.9bn in formal healthcare and \pounds8.8bn in informal care costs. Likewise with the difference in incident dementia cases avoided, additional cost associated with increased PD prevalence were symmetrical. Cohort QALYs showed minimal variation across scenarios (<0.2\% difference), while caregiver QALYs had an inverse relationship with PD prevalence, as there were fewer caregivers when fewer dementia cases occur. The dementia cost structure shifted from informal care dominance at model initiation (2024: \pounds18.4bn vs \pounds9.0bn) to formal care dominance by 2027 as dementia severity increases and institutionalisation rates rose from 12\% to 38\%. The size of our estimated benefits are large due to the high prevalence of PD, and the large increase and decrease to 75\% and 25\%. Our results have to be considered in context of this.
+At a current PD prevalence of 50\%, we projected that there will be 2.36 million incident dementia cases among adults aged 65+ in England over 2024--2040. Halving PD prevalence to 25\% prevented 95,442 incident cases, while increasing it to 75\% added 95,196 incident cases. Total dementia-related cost savings from halving PD were \pounds17.70bn, compromised of \pounds9.61bn in formal healthcare and \pounds8.09bn in informal care costs. Likewise with the difference in incident dementia cases avoided, additional cost associated with increased PD prevalence were near symmetrical. Cohort QALYs showed minimal variation across scenarios (<0.2\% difference), while caregiver QALYs had an inverse relationship with PD prevalence, as there were fewer caregivers when fewer dementia cases occur. The cumulative dementia cost structure shifted from informal care dominance at model initiation  (50\% PD prevalence; 2024: \pounds18.3bn vs \pounds8.9bn; 2031: formal care: \pounds129.21bn; informal care: 125.52bn) to formal care dominance by 2031 as dementia severity increases and institutionalisation rates rose from 12\% to 38\%. The size of our estimated benefits are large due to the high prevalence of PD, and the large increase and decrease to 75\% and 25\%. Our results have to be considered in context of this.
 
 Using an individual-level microsimulation approach, we model a population-level exposure shift rather than the effect of a specific, costed intervention, meaning the estimates reflect the potential effects of sustained reductions in PD prevalence. This study does not consider the costs of such an intervention that would lower PD, or at what per-year rate it would lower PD prevalence by, therefore further cost-effectiveness methods should be incorporated from these results. Our model focuses on individuals aged 65 years and older, aligning with common dementia projections and capturing the population at highest risk of both severe PD and dementia. Given the high prevalence of PD disease in England, even modest population-level reductions can lead to substantial public health and economic benefits. However, there is currently an absence of research on or a previously introduced individual-level PD intervention itself. This provided the rationale for a scenario exposure shift investigation, and not testing a specific intervention.
 
-At 50\% prevalence, PD was the most preventable modifiable risk factor in the model. However, PD showed only 8\% relative enrichment in the dementia population (53.8\% vs 49.8\%) compared to 65\% for depression (10.9\% vs 6.6\%), and 77\% for Type 2 diabetes (7.6\% vs 4.3\%). This indicates PD as a weak but ubiquitous risk factor. Its role as a risk factor derives from its high prevalence rate rather than strong individual risk increase. As some level of irreversible PD affects at least 50\% of over 65 year olds in England, but with a modest per-person risk (HR = 1.21), it offers a different but equally valuable prevention pathway when compared to rarer but higher risk risk factors, such as Type 2 diabetes (prevalence 4.5\%, HR = 2.06).
+At 50\% prevalence, PD was the most preventable modifiable risk factor in the model. However, PD showed only 8.\% relative enrichment in the dementia population (54.1\% vs 49.9\%) compared to 66.3\% for depression (11.0\% vs 6.6\%), and 79.5\% for Type 2 diabetes (7.9\% vs 4.4\%). This indicates PD as a weak but ubiquitous risk factor. Its role as a risk factor derives from its high prevalence rate rather than strong individual risk increase. As some level of irreversible PD affects at least 50\% of over 65 year olds in England, but with a modest per-person risk (HR = 1.21), it offers a different but equally valuable prevention pathway when compared to rarer but higher risk risk factors, such as Type 2 diabetes (prevalence 4.5\%, HR = 2.06).
 
-Our findings are important in the current context of the deteriorating English oral health profile. The 2023 Adult Oral Health survey reported that the current oral health of England is comparable to that of 1998, with 44\% of 65--74 year olds in 2023 showing primary or secondary tooth decay, up from 21\% in 2009 \cite{ref43}. Between 2009 and 2023 there was a 9 percentage points decrease in the proportion who reported attending regular dental check-ups, and our findings add to the growing literature that the negative effects of untreated PD and a struggling dental care system will have a health system-wide effect \cite{ref44}. Improved attendance of preventable dental services by individuals could yield substantial dementia-related long-terms health and economic returns, especially if PD is caught at an early stage or in midlife. Integrating oral health screening into existing general NHS health check-ups or during chronic non-communicable disease prevention pathways could identify individuals with severe PD who may benefit most from dental treatment. Given severe PD's high prevalence among older adults, even with the magnitude of its dementia-causality pathway being undetermined, it warrants consideration among other targeted high-risk strategies. We believe our results contribute to the growing body of literature providing evidence that PD has to be considered as an established dementia risk factor, especially after the 2024 Lancet Commission on dementia determined that there is a scarcity of consistent, high-quality evidence for this association, despite only citing two studies \cite{ref18,ref45}.
+Our findings are important in the current context of the deteriorating English oral health profile. The 2023 Adult Oral Health survey reported that the current oral health of England is comparable to that of 1998, with 44\% of 65--74 year olds in 2023 showing primary or secondary tooth decay, up from 21\% in 2009 \cite{ref41}. Between 2009 and 2023 there was a 9 percentage points decrease in the proportion who reported attending regular dental check-ups, and our findings add to the growing literature that the negative effects of untreated PD and a struggling dental care system will have a health system-wide effect \cite{ref42}. Improved attendance of preventable dental services by individuals could yield substantial dementia-related long-terms health and economic returns, especially if PD is caught at an early stage or in midlife. Integrating oral health screening into existing general NHS health check-ups or during chronic non-communicable disease prevention pathways could identify individuals with severe PD who may benefit most from dental treatment. Given severe PD's high prevalence among older adults, even with the magnitude of its dementia-causality pathway being undetermined, it warrants consideration among other targeted high-risk strategies. We believe our results contribute to the growing body of literature providing evidence that PD has to be considered as an established dementia risk factor, especially after the 2024 Lancet Commission on dementia determined that there is a scarcity of consistent, high-quality evidence for this association, despite only citing two studies \cite{ref18,ref43}.
 
-The economic outcomes of our model are almost entirely modelled by the dynamics of care settings and trends. We expect that as more incident dementia cases accrue, and as individuals with dementia survive for more years, institutional care settings are required more. Institutionalisation rates increased from 12\% in 2024 to 38\% in 2040, with institutional care settings generating higher per-person annual costs than informal costs. The higher institutional costs reflect the 24-hour professional care staffing requirements, facility costs and trained staff that can manage symptoms, rather than the more personal yet less professional one-to-one care of informal caregivers. Our results align with estimates that as many as 49\% of individuals with dementia will be treated in a care home setting by 2040, driven by an increasing number of severe dementia cases (Supplementary Material) \cite{ref17}.
+The economic outcomes of our model are almost entirely modelled by the dynamics of care settings and trends. We expect that as more incident dementia cases accrue, and as individuals with dementia survive for more years, institutional care settings are required more. Institutionalisation rates increased from 12\% in 2024 to 40\% in 2040, with institutional care settings generating higher per-person annual costs than informal costs. The higher institutional costs reflect the 24-hour professional care staffing requirements, facility costs and trained staff that can manage symptoms, rather than the more personal yet less professional one-to-one care of informal caregivers. Our results align with estimates that as many as 49\% of individuals with dementia will be treated in a care home setting by 2040, driven by an increasing number of severe dementia cases (Supplementary Material Figure 7.G-I) \cite{ref17}. Our one-way sensitivity analysis reveals the competing mortality effects with dementia. At the 25\% and 50\% PD prevalence levels the upper interval limit (HR=1.38) produced lower total costs (25\% PD: £546.17bn; 50\% PD: £577.39) than the baseline or lower limit (HR=1.07; 25\% PD: £520.80bn; 50\% PD: £527.06bn). Individuals who develop dementia earlier due to the higher HR experience a shorter disease duration and earlier death, resulting in lower healthcare costs despite the increased population-level dementia incidence. This effect was marginally mitigated at 75\% PD prevalence, where the amount of incident cases was great enough to counter this effect. This has been commonly seen in dementia microsimualtion models, an example being that reducing vascular risk factors has been shown to increase population-level dementia prevalence by increasing life expectancy placing more individuals into higher-mortality risk ages \cite{ref44}.
 
-Our cost per cases prevented ($\sim$\pounds172,000) represents approximately five years of dementia-related costs at an average annual cost of \pounds36,000 per person. This is comparable to other previously published dementia projections. The total cost savings of \pounds19.7bn over 2024--2040 translate to an annual average saving of \pounds1.16bn. Population-level interventions combining hearing aids, smoking cessation and blood pressure treatment have been estimated to save \pounds1.9bn annually while reducing dementia prevalence by 8.5\% \cite{ref46}. Further analysis found that reducing hypertension by the reformulation of food products to reduce salt would lead to cost-savings of \pounds2.4bn per age cohort \cite{ref37}.
+Our cost per cases prevented ($\sim$\pounds185,000) represents approximately five years of dementia-related costs at an average annual cost of approximately \pounds36,500 per person. This is comparable to other previously published dementia projections. The total cost savings of \pounds17.7bn over 2024--2040 translate to an annual average saving of \pounds1.04bn. Population-level interventions combining hearing aids, smoking cessation and blood pressure treatment have been estimated to save \pounds1.9bn annually while reducing dementia prevalence by 8.5\% \cite{ref45}. Further analysis found that reducing hypertension by the reformulation of food products to reduce salt would lead to cost-savings of \pounds2.4bn per age cohort \cite{ref37}.
 
-Using a per-capita basis, cohort QALYs averaged 0.74 per person per year with less than 0.001 QALY/person/year variation across scenarios. This demonstrates that dementia prevention through lowering risk factors works by reducing the number of individuals with dementia, and not by improving existing population health.
+Using a per-capita basis, population QALYs averaged 0.75 per person per year with less than 0.001 QALY/person/year variation across scenarios. This demonstrates that dementia prevention through lowering risk factors works by reducing the number of individuals with dementia, and not by improving existing population health. Our small QALY findings are a function of how dementia utility is measured, and not a model limitation. It has been commonly discussed that utility values are flawed at estimating the negative health effects of having dementia \cite{ref46}. The utility values by dementia stage severity we have used are at the upper bound of suggested values, but this was to be cautious when estimating final effects. Caregiver QALYs were more responsive to PD prevalence changes (25\% PD prevalence: 9.16mn; 75\% PD prevalence: 9.79mn; 6.88\% variation), but this was expected given their structural dependence on dementia population size, and still demonstrated small variations. Given the QALY results in comparison to the other outputs, we suggest that the case for PD reduction relevant to caregivers derives more from informal care cost savings due to the value of unpaid caregiving time. This finding is consistent with the literature on prevention-focused dementia interventions \cite{ref47}. Our findings support the view that individual-level results (QALYs per-person) can be modest but the societal benefits can be large due to the size of the potential target population \cite{ref48}.
 
 \subsection{Strengths and limitations}
 
 This study has several strengths. By using an individual-level microsimulation model we are able to more accurately capture heterogeneity in dementia progression and associated care patterns than aggregate cohort models. This is especially true for capturing competing risks factors, as we have incorporated multiple established dementia risk factors, alongside PD. This avoids the overestimation of PD's isolated effect. A key strength is our use of recent ONS population projections (from 2023), 2024 cost estimates, and dementia late stage onset HRs from a large national cohort study (Biobank) with no dementia controlled at baseline \cite{ref32}. We have based our model structure on the English population. However, given our use of HRs and prevalences from the UK Biobank our model is likely to be generalisable to the whole of the UK, given re-initialisation of baseline population to the specific country or region.
+Our model has several structure limitations that are bounded by the data available. Our model assumes constant risk factor prevalence and HRs over time. This does not reflect the reality of the over 65 years population in England, where risk factor prevalence is likely to vary as targeted initiatives lead to a more or less healthy population. We also model PD, and other risk factors such as hypertension and Type 2 diabetes, as binary risk factors. This does not capture the severity gradients of the diseases that will affect the onset of dementia \cite{ref49}. PD does not interact with other risk factors in our model. The joint effect of having both PD and hypertension is assumed to be the product of their individual HRs, with no additional interactive effect. Despite established links between PD, obesity, and hypertension, there is an absence of evidence that quantifies any departure from multiplicative joint effects on dementia incidence \cite{ref50}. Adding such interactions into this model relying on using multiple different studies from various study populations would introduce additional heterogeneity. Finally, our model relies on observational HRs which may include residual confounding despite covariate adjustment in the source study. These sources generally adjusted for comorbidities, such as hypertension and diabetes, which we modelled as independent risk factors. Therefore, applying these covariate-adjusted HRs multiplicatively may have actually resulted in more conservative estimates as the PD HR used captures only its direct effect on dementia onset.
 
 \section{Conclusion}
 
-PD's contribution to the dementia burden in over 65 year olds in England derives from its high population prevalence rather than strong individual-level risk. The deteriorating oral health profile of England, which includes declining dental appointment attendance and worsening periodontal outcomes, makes our findings key in disease intervention planning. Our results support the case for including PD within the established modifiable dementia risk factor frameworks, especially due to the absence of individual-level interventions in England that target these at risk populations. Given the best available evidence, we estimate that halving PD prevalence to 25\% could prevent approximately 115,000 dementia cases and save \pounds19.7 billion over 2024--2040. The results of our sensitivity analysis show that the economic and health impacts are substantial across PD-dementia onset magnitudes, conditional on the observed PD-dementia association being causal. Given this, future research needs to include prospective studies and intervention trials with long follow-up to establish the true size of this causal effect. The advantage of open source microsimulation models such as this one is that they can be easily updated as new evidence arises.
+PD's contribution to the dementia burden in over 65 year olds in England derives from its high population prevalence rather than strong individual-level risk. The deteriorating oral health profile of England, which includes declining dental appointment attendance and worsening periodontal outcomes, makes our findings key in disease intervention planning. Our results support the case for including PD within the established modifiable dementia risk factor frameworks, especially due to the absence of individual-level interventions in England that target these at risk populations. Given the best available evidence, we estimate that halving PD prevalence to 25\% could prevent approximately 95,000 dementia cases and save \pounds17.7 billion over 2024--2040. The results of our sensitivity analysis show that the economic and health impacts are substantial across PD-dementia onset magnitudes, conditional on the observed PD-dementia association being causal. Given this, future research needs to include prospective studies and intervention trials with long follow-up to establish the true size of this causal effect. The advantage of open source microsimulation models such as this one is that they can be easily updated as new evidence arises.
+
 
 \begin{thebibliography}{99}
 
@@ -331,29 +395,27 @@ PD's contribution to the dementia burden in over 65 year olds in England derives
 
 \bibitem{ref39} Reed C, Barrett A, Lebrec J, et al. How useful is the EQ-5D in assessing the impact of caring for people with Alzheimer's disease? \textit{Health Qual Life Outcomes}. 2017;15:16.
 
-\bibitem{ref40} National Institute for Health and Care Excellence (NICE). \textit{Guide to the methods of technology appraisal. Process and methods [PMG9]}. London: National Institute for Health and Care Excellence; 2013.
+\bibitem{ref40} O'Hagan A, Stevenson M, Madan J. Monte Carlo probabilistic sensitivity analysis for patient level simulation models: efficient estimation of mean and variance using ANOVA. \textit{Health Economics}. 2007;16(10):1009--1023.
 
-\bibitem{ref41} O'Hagan A, Stevenson M, Madan J. Monte Carlo probabilistic sensitivity analysis for patient level simulation models: efficient estimation of mean and variance using ANOVA. \textit{Health Economics}. 2007;16(10):1009--1023.
+\bibitem{ref41} Office for Health Improvement and Disparities. \textit{Adult oral health survey 2023: a report on the findings of the 2023 adult oral health survey} [Internet]. London: Office for Health Improvement and Disparities; 2025 Dec 9.
 
-\bibitem{ref42} Linden GJ, Lyons A, Scannapieco FA. Periodontal systemic associations: review of the evidence. \textit{J Clin Periodontol}. 2013;40 Suppl 14:S8--S19.
+\bibitem{ref42} Watt RG, Stennett M, Redican C, Vernazza C. Urgent need for transformative change in NHS dentistry. \textit{Lancet}. 2024 Mar 23;403(10432):1115--1117.
 
-\bibitem{ref43} Office for Health Improvement and Disparities. \textit{Adult oral health survey 2023: a report on the findings of the 2023 adult oral health survey} [Internet]. London: Office for Health Improvement and Disparities; 2025 Dec 9.
+\bibitem{ref43} Qi X, Luo H, Wu B. Reflections on The Lancet's Commission on dementia prevention, intervention, and care. \textit{Lancet}. 2025;405(10479):625.
 
-\bibitem{ref44} Watt RG, Stennett M, Redican C, Vernazza C. Urgent need for transformative change in NHS dentistry. \textit{Lancet}. 2024 Mar 23;403(10432):1115--1117.
+\bibitem{ref44} Zissimopoulos JM, Tysinger BC, St Clair PA, Crimmins EM. The impact of changes in population health and mortality on future prevalence of Alzheimer's disease and other dementias in the United States. \textit{J Gerontol B Psychol Sci Soc Sci}. 2018;73(Suppl 1):S38--S47.
 
-\bibitem{ref45} Qi X, Luo H, Wu B. Reflections on The Lancet's Commission on dementia prevention, intervention, and care. \textit{Lancet}. 2025;405(10479):625.
+\bibitem{ref45} Mukadam N, Anderson R, Knapp M, Wittenberg R, Karagiannidou M, Costafreda SG, Tutton M, Alessi C, Livingston G. Effective interventions for potentially modifiable risk factors for late-onset dementia: a costs and cost-effectiveness modelling study. \textit{Lancet Healthy Longev}. 2020;1(1):e13--e20.
 
-\bibitem{ref46} Mukadam N, Anderson R, Knapp M, Wittenberg R, Karagiannidou M, Costafreda SG, Tutton M, Alessi C, Livingston G. Effective interventions for potentially modifiable risk factors for late-onset dementia: a costs and cost-effectiveness modelling study. \textit{Lancet Healthy Longev}. 2020;1(1):e13--e20.
+\bibitem{ref46} Mulhern B, Rowen D, Brazier J, Smith S, Romeo R, Tait R, Watchurst C, Chua KC, Loftus V, Young T, Lamping D. Development of DEMQOL-U and DEMQOL-PROXY-U: generation of preference-based indices from DEMQOL and DEMQOL-PROXY for use in economic evaluation. \textit{Health Technol Assess}. 2013;17(5):v--xv, 1--140.
 
-\bibitem{ref47} Mulhern B, Rowen D, Brazier J, Smith S, Romeo R, Tait R, Watchurst C, Chua KC, Loftus V, Young T, Lamping D. Development of DEMQOL-U and DEMQOL-PROXY-U: generation of preference-based indices from DEMQOL and DEMQOL-PROXY for use in economic evaluation. \textit{Health Technol Assess}. 2013;17(5):v--xv, 1--140.
+\bibitem{ref47} Consiglio A, Lopez A, Bosco A. A review of dementia caregiver interventions: valuing psychological well-being and economic impact through the state-preference method. \textit{Int J Environ Res Public Health}. 2026;23(1):104.
 
-\bibitem{ref48} Consiglio A, Lopez A, Bosco A. A review of dementia caregiver interventions: valuing psychological well-being and economic impact through the state-preference method. \textit{Int J Environ Res Public Health}. 2026;23(1):104.
+\bibitem{ref48} Wimo A, Handels R, Antikainen R, Eriksdotter M, Jönsson L, Knapp M, Kulmala J, Laatikainen T, Lehtisalo J, Peltonen M, Sköldunger A, Soininen H, Solomon A, Strandberg T, Tuomilehto J, Ngandu T, Kivipelto M. Dementia prevention: the potential long-term cost-effectiveness of the FINGER prevention program. \textit{Alzheimers Dement}. 2023;19(3):999--1008.
 
-\bibitem{ref49} Wimo A, Handels R, Antikainen R, Eriksdotter M, Jönsson L, Knapp M, Kulmala J, Laatikainen T, Lehtisalo J, Peltonen M, Sköldunger A, Soininen H, Solomon A, Strandberg T, Tuomilehto J, Ngandu T, Kivipelto M. Dementia prevention: the potential long-term cost-effectiveness of the FINGER prevention program. \textit{Alzheimers Dement}. 2023;19(3):999--1008.
+\bibitem{ref49} Zheng B, Su B, Price G, Tzoulaki I, Ahmadi-Abhari S, Middleton L. Glycemic control, diabetic complications, and risk of dementia in patients with diabetes: results from a large U.K. cohort study. \textit{Diabetes Care}. 2021;44(7):1556--1563.
 
-\bibitem{ref50} Zheng B, Su B, Price G, Tzoulaki I, Ahmadi-Abhari S, Middleton L. Glycemic control, diabetic complications, and risk of dementia in patients with diabetes: results from a large U.K. cohort study. \textit{Diabetes Care}. 2021;44(7):1556--1563.
-
-\bibitem{ref51} Larvin H, Kang J, Aggarwal VR, Pavitt S, Wu J. The additive effect of periodontitis with hypertension on risk of systemic disease and mortality. \textit{J Periodontol}. 2022;93(7):1024--1035.
+\bibitem{ref50} Larvin H, Kang J, Aggarwal VR, Pavitt S, Wu J. The additive effect of periodontitis with hypertension on risk of systemic disease and mortality. \textit{J Periodontol}. 2022;93(7):1024--1035.
 
 \end{thebibliography}
 
